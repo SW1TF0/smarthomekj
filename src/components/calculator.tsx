@@ -89,6 +89,7 @@ export function Calculator({ locale, t, form }: { locale: Locale; t: Labels; for
   const [showList, setShowList] = useState(false);
   const [added, setAdded] = useState<"" | "all" | "partial">("");
   const [copied, setCopied] = useState(false);
+  const [summaryVisible, setSummaryVisible] = useState(false);
 
   // Start from the link (shared estimates and the demo's "I want this" button), then keep the link in sync.
   useEffect(() => {
@@ -99,6 +100,15 @@ export function Calculator({ locale, t, form }: { locale: Locale; t: Labels; for
     if (ready) window.history.replaceState(null, "", `${window.location.pathname}?${serializeConfig(cfg)}`);
     setAdded("");
   }, [cfg, ready]);
+
+  // The phone price bar steps aside while the summary card itself is on screen.
+  useEffect(() => {
+    const el = document.getElementById("summary");
+    if (!el || !("IntersectionObserver" in window)) return;
+    const io = new IntersectionObserver(([e]) => setSummaryVisible(e.isIntersecting), { rootMargin: "-120px 0px 0px 0px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
 
   // Live shop prices; products the shop no longer lists fall back to the starter catalogue for the estimate only.
   const catalogue = useMemo(() => {
@@ -189,7 +199,7 @@ export function Calculator({ locale, t, form }: { locale: Locale; t: Labels; for
   return (
     <>
       {/* Price bar for phones: the summary card is further down the page there. */}
-      <div className="glass sticky top-12 z-30 border-b border-black/5 lg:hidden">
+      <div className={`glass sticky top-12 z-30 border-b border-black/5 transition-[opacity,visibility] duration-300 lg:hidden ${summaryVisible ? "invisible opacity-0" : ""}`}>
         <div className="container-wide flex h-14 items-center justify-between gap-3">
           <div className="min-w-0 leading-tight">
             <span className="block text-[11px] text-mute">{cfg.install ? t.summary.estimate : t.summary.exact}</span>
