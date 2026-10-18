@@ -11,9 +11,9 @@ Website and online shop for SmartHomeKJ: smart home design, installation and dev
 ## Run locally
 
 ```bash
-cp .env.example .env      # then edit values
+cp .env.example .env      # then edit values (needs a Postgres database)
 npm install
-npm run setup             # creates the SQLite database and seeds products, FAQ and the admin user
+npm run setup             # creates the tables in your Postgres database and seeds products, FAQ and the admin user
 npm run dev               # http://localhost:3000
 ```
 
@@ -22,15 +22,24 @@ Admin: http://localhost:3000/admin with `ADMIN_EMAIL` / `ADMIN_PASSWORD` from `.
 ## Before going live
 
 1. **Admin → Settings:** fill in every field marked in yellow (registered name, EIK, VAT number, address, phone, IBAN). These appear in the footer, legal pages and emails.
-2. **Database:** in `prisma/schema.prisma` change `provider = "sqlite"` to `"postgresql"`, set `DATABASE_URL`, run `npm run setup`.
-3. **Stripe:** set `STRIPE_SECRET_KEY`, add a webhook to `https://YOUR-DOMAIN/api/stripe/webhook` with events `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.expired`, and set `STRIPE_WEBHOOK_SECRET`.
-4. **Email:** set `SMTP_*` so customers get order confirmations and withdrawal receipts.
-5. **Chat AI (optional):** set `ANTHROPIC_API_KEY`.
-6. Set `NEXT_PUBLIC_SITE_URL` and a long random `AUTH_SECRET`.
-7. Have a lawyer review the legal texts in `src/i18n/legal/`.
-8. Re-check prices against eMAG/Ozone/Technopolis (see `docs/pricing-research.md`).
+2. **Stripe:** set `STRIPE_SECRET_KEY`, add a webhook to `https://YOUR-DOMAIN/api/stripe/webhook` with events `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.expired`, and set `STRIPE_WEBHOOK_SECRET`.
+3. **Email:** set `SMTP_*` so customers get order confirmations and withdrawal receipts.
+4. **Chat AI (optional):** set `ANTHROPIC_API_KEY`.
+5. Set `NEXT_PUBLIC_SITE_URL` and a long random `AUTH_SECRET`.
+6. Have a lawyer review the legal texts in `src/i18n/legal/`.
+7. Re-check prices against eMAG/Ozone/Technopolis (see `docs/pricing-research.md`).
 
-Hosting: any Node host (Vercel, Railway, a VPS). `npm run build && npm start`.
+## Put it online (Vercel, free)
+
+GitHub Pages only serves static files, so it cannot run the shop, chat or admin panel. Vercel runs the site straight from this GitHub repo:
+
+1. Sign in at https://vercel.com with GitHub and click **Add New → Project → Import** `smarthomekj`.
+2. Before deploying, open **Storage → Create → Neon (Postgres)** and connect it to the project. It adds `DATABASE_URL` and `DATABASE_URL_UNPOOLED` for you.
+3. Under **Environment Variables** add at least `AUTH_SECRET` (any long random text), `ADMIN_EMAIL`, `ADMIN_PASSWORD` and `NEXT_PUBLIC_SITE_URL` (your Vercel address, later your domain). Add Stripe, SMTP and Anthropic keys when you have them.
+4. Click **Deploy**. Each build creates the tables and seeds products automatically (`vercel-build` script); every push to `main` redeploys.
+5. Optional: **Settings → Domains** to connect your own domain, e.g. smarthomekj.bg.
+
+Any other Node host with Postgres works too: `npm run setup && npm run build && npm start`.
 
 ## Where things live
 

@@ -61,7 +61,6 @@ export default async function SuccessPage({
 
   return (
     <section className="relative overflow-hidden pt-24 pb-28 text-center">
-      <div className="hero-glow opacity-50" aria-hidden="true" />
       <div className="container-apple relative max-w-[720px]">
         <span className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-success text-white shadow-xl">
           <CheckIcon size={40} />

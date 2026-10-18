@@ -2,12 +2,12 @@ import Image from "next/image";
 import { CategoryIcon } from "./icons";
 
 export const categoryTheme: Record<string, { bg: string; glow: string; device: string; icon: string }> = {
-  lighting: { bg: "from-amber-50 to-orange-100", glow: "rgba(255,170,60,0.55)", device: "from-white to-amber-50", icon: "text-amber-500" },
-  climate: { bg: "from-sky-50 to-cyan-100", glow: "rgba(56,189,248,0.5)", device: "from-white to-sky-50", icon: "text-sky-500" },
-  security: { bg: "from-slate-100 to-slate-200", glow: "rgba(100,116,139,0.45)", device: "from-zinc-800 to-black", icon: "text-white" },
-  energy: { bg: "from-lime-50 to-emerald-100", glow: "rgba(52,211,153,0.5)", device: "from-white to-emerald-50", icon: "text-emerald-500" },
-  entertainment: { bg: "from-violet-50 to-fuchsia-100", glow: "rgba(192,132,252,0.5)", device: "from-zinc-700 to-zinc-900", icon: "text-fuchsia-300" },
-  hubs: { bg: "from-indigo-50 to-blue-100", glow: "rgba(99,102,241,0.45)", device: "from-white to-indigo-50", icon: "text-indigo-500" },
+  lighting: { bg: "from-[#f5f5f7] to-[#ececf0]", glow: "rgba(255,170,60,0.55)", device: "from-white to-amber-50", icon: "text-amber-500" },
+  climate: { bg: "from-[#f5f5f7] to-[#ececf0]", glow: "rgba(56,189,248,0.5)", device: "from-white to-sky-50", icon: "text-sky-500" },
+  security: { bg: "from-[#f5f5f7] to-[#ececf0]", glow: "rgba(100,116,139,0.45)", device: "from-zinc-800 to-black", icon: "text-white" },
+  energy: { bg: "from-[#f5f5f7] to-[#ececf0]", glow: "rgba(52,211,153,0.5)", device: "from-white to-emerald-50", icon: "text-emerald-500" },
+  entertainment: { bg: "from-[#f5f5f7] to-[#ececf0]", glow: "rgba(192,132,252,0.5)", device: "from-zinc-700 to-zinc-900", icon: "text-fuchsia-300" },
+  hubs: { bg: "from-[#f5f5f7] to-[#ececf0]", glow: "rgba(99,102,241,0.45)", device: "from-white to-indigo-50", icon: "text-indigo-500" },
 };
 
 /** Product image, or a rendered device illustration when no photo is uploaded. */
@@ -36,7 +36,7 @@ export function ProductVisual({
       ) : (
         <>
           <div
-            className="absolute w-2/3 aspect-square rounded-full blur-3xl opacity-80"
+            className="absolute w-2/3 aspect-square rounded-full blur-3xl opacity-40"
             style={{ background: `radial-gradient(circle, ${theme.glow}, transparent 70%)` }}
             aria-hidden="true"
           />

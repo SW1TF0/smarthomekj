@@ -1,13 +1,19 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { HomeShowcase } from "@/components/home-showcase";
-import { CategoryIcon } from "@/components/icons";
 import { ProductCard } from "@/components/product-card";
-import { categoryTheme } from "@/components/product-visual";
+import { CategoryWidget } from "@/components/category-widget";
 import { Reveal } from "@/components/reveal";
 import { isLocale } from "@/i18n/config";
 import { getDictionary } from "@/i18n";
 import { getProducts } from "@/lib/products";
+
+const sceneStyles = [
+  { bg: "bg-[#ff9f0a] text-white", icon: "M12 3v2M5.6 5.6l1.4 1.4M3 12h2M19 12h2M17 7l1.4-1.4M7 16a5 5 0 1 1 10 0M3 20h18" },
+  { bg: "bg-[#0a84ff] text-white", icon: "M14 4h5v16h-5M10 12h9M6 8l-4 4 4 4" },
+  { bg: "bg-[#bf5af2] text-white", icon: "M4 6h16v12H4zM4 10h16M8 6v4M12 6v4M16 6v4" },
+  { bg: "bg-[#5e5ce6] text-white", icon: "M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5Z" },
+];
 
 export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -23,13 +29,12 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
     <>
       {/* Hero */}
       <section className="relative overflow-hidden pt-16 pb-12 text-center md:pt-24">
-        <div className="hero-glow" aria-hidden="true" />
         <div className="container-apple relative">
-          <p className="text-[19px] font-semibold text-[#bf4800] md:text-[21px]">{h.eyebrow}</p>
-          <h1 className="headline-hero mt-2">
+          <p className="text-[17px] font-semibold text-mute md:text-[19px]">{h.eyebrow}</p>
+          <h1 className="headline-hero mt-3">
             {titleLine1}
             <br />
-            <span className="text-gradient">{titleLine2}</span>
+            <span className="text-mute">{titleLine2}</span>
           </h1>
           <p className="lead mx-auto mt-6 max-w-[720px] text-ink-2">{h.subtitle}</p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
@@ -42,7 +47,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           </div>
         </div>
         <div className="container-wide relative mt-14 md:mt-20">
-          <HomeShowcase labels={tileLabels} />
+          <HomeShowcase labels={tileLabels} app={h.app} scenes={h.scenes.map((s) => s.title)} />
         </div>
       </section>
 
@@ -61,31 +66,23 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       {/* Category tiles */}
       <section className="pb-24" aria-label={dict.nav.solutions}>
         <div className="container-wide grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {h.tiles.map((tile, i) => {
-            const theme = categoryTheme[tile.key];
-            return (
-              <Reveal key={tile.key} delay={(i % 3) * 80}>
-                <Link
-                  href={`/${locale}/solutions#${tile.key}`}
-                  className={`tile tile-hover flex h-full min-h-[340px] flex-col justify-between bg-gradient-to-br ${theme.bg} p-8 md:min-h-[420px] md:p-10`}
-                >
-                  <div>
-                    <h3 className="headline-md">{tile.title}</h3>
-                    <p className="mt-3 max-w-[320px] text-[17px] text-ink-2">{tile.text}</p>
-                  </div>
-                  <div className="flex items-end justify-between">
-                    <span className="link-chevron text-[17px]">{dict.common.learnMore}</span>
-                    <span
-                      className="flex h-24 w-24 items-center justify-center rounded-[30%] bg-white/70 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.25)] ring-1 ring-black/5 backdrop-blur md:h-28 md:w-28"
-                      aria-hidden="true"
-                    >
-                      <CategoryIcon category={tile.key} size={48} className={theme.icon === "text-white" ? "text-ink" : theme.icon} strokeWidth={1.3} />
-                    </span>
-                  </div>
-                </Link>
-              </Reveal>
-            );
-          })}
+          {h.tiles.map((tile, i) => (
+            <Reveal key={tile.key} delay={(i % 3) * 80}>
+              <Link
+                href={`/${locale}/solutions#${tile.key}`}
+                className="tile tile-hover flex h-full min-h-[380px] flex-col justify-between bg-cloud p-8 md:min-h-[440px] md:p-10"
+              >
+                <div>
+                  <h3 className="headline-md">{tile.title}</h3>
+                  <p className="mt-3 max-w-[340px] text-[17px] text-mute">{tile.text}</p>
+                  <span className="link-chevron mt-4 inline-block text-[17px]">{dict.common.learnMore}</span>
+                </div>
+                <div className="mt-10 flex justify-center">
+                  <CategoryWidget category={tile.key} title={tile.title} app={h.app} />
+                </div>
+              </Link>
+            </Reveal>
+          ))}
         </div>
       </section>
 
@@ -99,12 +96,14 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           <div className="mt-16 grid gap-4 md:grid-cols-2">
             {h.scenes.map((scene, i) => (
               <Reveal key={scene.title} delay={i * 80}>
-                <div className="tile h-full bg-night-2 p-8 ring-1 ring-white/10 md:p-10">
-                  <span className="text-[13px] font-semibold text-white/40">0{i + 1}</span>
-                  <h3 className="mt-3 text-[28px] font-semibold tracking-tight">
-                    <span className={i % 2 ? "text-gradient" : "text-gradient-warm"}>{scene.title}</span>
-                  </h3>
-                  <p className="mt-3 text-[17px] text-white/70">{scene.text}</p>
+                <div className="tile h-full bg-night-2 p-8 md:p-10">
+                  <span className={`flex h-12 w-12 items-center justify-center rounded-full ${sceneStyles[i % 4].bg}`}>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d={sceneStyles[i % 4].icon} />
+                    </svg>
+                  </span>
+                  <h3 className="mt-6 text-[28px] font-semibold tracking-tight">{scene.title}</h3>
+                  <p className="mt-2 text-[17px] text-white/60">{scene.text}</p>
                 </div>
               </Reveal>
             ))}
@@ -123,7 +122,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
               <Reveal key={s.label} delay={i * 80} className="text-center">
                 <dt className="sr-only">{s.label}</dt>
                 <dd>
-                  <span className="text-gradient block text-[56px] font-bold leading-none tracking-tight md:text-[72px]">{s.value}</span>
+                  <span className="block text-[56px] font-bold leading-none tracking-tight md:text-[72px]">{s.value}</span>
                   <span className="mt-2 block text-[15px] text-mute">{s.label}</span>
                 </dd>
               </Reveal>

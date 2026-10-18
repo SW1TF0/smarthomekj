@@ -15,7 +15,6 @@ export default async function AboutPage({ params }: LocaleParams) {
   return (
     <>
       <section className="relative overflow-hidden pt-24 pb-20 text-center md:pt-32">
-        <div className="hero-glow opacity-60" aria-hidden="true" />
         <div className="container-apple relative">
           <h1 className="headline-hero">{a.title}</h1>
           <p className="headline-md mx-auto mt-6 max-w-[800px] text-mute">{a.lead}</p>
@@ -36,7 +35,7 @@ export default async function AboutPage({ params }: LocaleParams) {
           <div className="mt-14 grid gap-4 md:grid-cols-3">
             {a.values.map((v, i) => (
               <Reveal key={v.title} delay={i * 80} className="tile bg-white p-10">
-                <h3 className="text-gradient text-[32px] font-bold tracking-tight">{v.title}</h3>
+                <h3 className="text-[32px] font-bold tracking-tight">{v.title}</h3>
                 <p className="mt-3 text-[17px] text-ink-2">{v.text}</p>
               </Reveal>
             ))}
