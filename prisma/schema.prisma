@@ -1,4 +1,4 @@
-// Postgres everywhere (local, Vercel, Neon or Supabase). DATABASE_URL_UNPOOLED is the
+// Postgres everywhere (local or hosted, e.g. Neon or Supabase). DATABASE_URL_UNPOOLED is the
 // non-pooled connection used for schema changes; locally it can equal DATABASE_URL.
 generator client {
   provider = "prisma-client-js"
