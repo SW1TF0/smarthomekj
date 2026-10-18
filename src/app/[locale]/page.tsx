@@ -5,8 +5,10 @@ import { FeaturedProducts } from "@/components/product-lists";
 import { CategoryWidget } from "@/components/category-widget";
 import { CheckIcon } from "@/components/icons";
 import { Reveal } from "@/components/reveal";
-import { isLocale } from "@/i18n/config";
+import type { Metadata } from "next";
+import { htmlLang, isLocale, locales } from "@/i18n/config";
 import { getDictionary } from "@/i18n";
+import { absoluteUrl, basePath, localePath, pageMetadata } from "@/lib/seo";
 
 const sceneStyles = [
   { bg: "bg-[#ff9f0a] text-white", icon: "M12 3v2M5.6 5.6l1.4 1.4M3 12h2M19 12h2M17 7l1.4-1.4M7 16a5 5 0 1 1 10 0M3 20h18" },
@@ -15,17 +17,49 @@ const sceneStyles = [
   { bg: "bg-[#5e5ce6] text-white", icon: "M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5Z" },
 ];
 
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale } = await params;
+  if (!isLocale(locale)) return {};
+  const { meta } = getDictionary(locale);
+  return pageMetadata({ locale, title: meta.title, description: meta.description, absoluteTitle: true });
+}
+
 export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   const dict = getDictionary(locale);
   const h = dict.home;
+  // Tells search engines who the company is and what the site is about.
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": absoluteUrl(`${basePath}/#organization`),
+        name: "SmartHomeKJ",
+        url: absoluteUrl(localePath(locale)),
+        logo: absoluteUrl(`${basePath}/icon.svg`),
+        description: dict.meta.description,
+        areaServed: { "@type": "Country", name: "Bulgaria" },
+        knowsAbout: dict.meta.keywords,
+      },
+      {
+        "@type": "WebSite",
+        "@id": absoluteUrl(`${basePath}/#website`),
+        name: "SmartHomeKJ",
+        url: absoluteUrl(localePath(locale)),
+        inLanguage: locales.map((l) => htmlLang[l]),
+        publisher: { "@id": absoluteUrl(`${basePath}/#organization`) },
+      },
+    ],
+  };
   const [titleLine1, titleLine2] = h.title.split("\n");
   const [introLine1, introLine2] = h.introTitle.split("\n");
   const tileLabels = Object.fromEntries(h.tiles.map((t) => [t.key, t.title]));
 
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
       {/* Hero */}
       <section className="relative overflow-hidden pt-16 pb-12 text-center md:pt-24">
         <div className="container-apple relative">

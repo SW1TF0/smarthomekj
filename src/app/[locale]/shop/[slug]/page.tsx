@@ -4,6 +4,7 @@ import { ProductDetail } from "@/components/product-detail";
 import { isLocale, locales } from "@/i18n/config";
 import { getDictionary } from "@/i18n";
 import { localizeProduct, starterProducts } from "@/lib/products";
+import { pageMetadata } from "@/lib/seo";
 
 type Params = { params: Promise<{ locale: string; slug: string }> };
 
@@ -19,7 +20,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const p = starterProducts.find((s) => s.slug === slug);
   if (!isLocale(locale) || !p) return {};
   const product = localizeProduct(p, locale);
-  return { title: product.name, description: product.tagline };
+  return pageMetadata({ locale, path: `shop/${slug}`, title: product.name, description: getDictionary(locale).meta.product.replace("{tagline}", product.tagline) });
 }
 
 export default async function ProductPage({ params }: Params) {

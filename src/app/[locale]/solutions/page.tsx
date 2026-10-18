@@ -4,10 +4,11 @@ import { CheckIcon } from "@/components/icons";
 import { ProductVisual } from "@/components/product-visual";
 import { Reveal } from "@/components/reveal";
 import { resolveLocale, type LocaleParams } from "@/i18n/page";
+import { pageMetadata } from "@/lib/seo";
 
 export async function generateMetadata({ params }: LocaleParams): Promise<Metadata> {
-  const { dict } = await resolveLocale(params);
-  return { title: dict.solutions.title, description: dict.solutions.subtitle };
+  const { locale, dict } = await resolveLocale(params);
+  return pageMetadata({ locale, path: "solutions", ...dict.meta.pages.solutions });
 }
 
 export default async function SolutionsPage({ params }: LocaleParams) {

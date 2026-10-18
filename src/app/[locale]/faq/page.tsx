@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { FaqList } from "@/components/faq-list";
 import { resolveLocale, type LocaleParams } from "@/i18n/page";
+import { pageMetadata } from "@/lib/seo";
 
 export async function generateMetadata({ params }: LocaleParams): Promise<Metadata> {
-  const { dict } = await resolveLocale(params);
-  return { title: dict.faq.title };
+  const { locale, dict } = await resolveLocale(params);
+  return pageMetadata({ locale, path: "faq", ...dict.meta.pages.faq });
 }
 
 export default async function FaqPage({ params }: LocaleParams) {

@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { ShopDelivery, ShopGrid } from "@/components/product-lists";
 import { resolveLocale, type LocaleParams } from "@/i18n/page";
+import { pageMetadata } from "@/lib/seo";
 
 export async function generateMetadata({ params }: LocaleParams): Promise<Metadata> {
-  const { dict } = await resolveLocale(params);
-  return { title: dict.shop.title, description: dict.shop.subtitle };
+  const { locale, dict } = await resolveLocale(params);
+  return pageMetadata({ locale, path: "shop", ...dict.meta.pages.shop });
 }
 
 export default async function ShopPage({ params }: LocaleParams) {

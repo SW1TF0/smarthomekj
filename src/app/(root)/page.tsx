@@ -4,8 +4,9 @@ const base = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
 export const metadata: Metadata = { title: "SmartHomeKJ", robots: { index: false } };
 
-// Static hosting has no server to pick a language, so the browser does it: Bulgarian unless the visitor uses English or Turkish.
-const script = `(function(){var l=(navigator.language||"bg").slice(0,2).toLowerCase();var t=l==="en"||l==="tr"?l:"bg";location.replace(${JSON.stringify(base)}+"/"+t+"/");})();`;
+// The site always opens in Bulgarian; visitors switch to English or Turkish in the menu.
+// On Vercel, vercel.json already redirects "/" to "/bg/" before this page loads; this is the fallback for other hosts.
+const script = `location.replace(${JSON.stringify(`${base}/bg/`)});`;
 
 export default function RootRedirect() {
   return (

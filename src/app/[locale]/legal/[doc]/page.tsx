@@ -5,6 +5,7 @@ import { isLocale, locales } from "@/i18n/config";
 import { getDictionary } from "@/i18n";
 import { LEGAL_KEYS, LEGAL_UPDATED, type LegalKey } from "@/i18n/legal";
 import { LegalBody } from "@/components/legal-body";
+import { pageMetadata } from "@/lib/seo";
 
 type Params = { params: Promise<{ locale: string; doc: string }> };
 
@@ -19,7 +20,7 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { locale, doc } = await params;
   if (!isLocale(locale) || !isDoc(doc)) return {};
-  return { title: getDictionary(locale).legal[doc] };
+  return pageMetadata({ locale, path: `legal/${doc}`, title: getDictionary(locale).legal[doc] });
 }
 
 export default async function LegalPage({ params }: Params) {
