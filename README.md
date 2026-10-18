@@ -28,6 +28,10 @@ What the free plan leaves out: card payments, AI chat answers and automatic emai
 2. **Settings → Pages → Build and deployment → Source: GitHub Actions.**
 3. Every push to `main` publishes the site to https://sw1tf0.github.io/smarthomekj/ (tab **Actions** shows progress). To publish again without a change: **Actions → Deploy site to GitHub Pages → Run workflow**.
 
+### Or: Vercel
+
+The same static site also runs on Vercel. Import the repository (Framework: Next.js, no settings or environment variables needed; the Firebase config is built in), then add the Vercel address (e.g. `smarthomekj.vercel.app`) under Firebase **Authentication → Settings → Authorized domains**.
+
 ### 3. First login
 
 1. Open https://sw1tf0.github.io/smarthomekj/admin/. The first time it asks you to create the owner account.
