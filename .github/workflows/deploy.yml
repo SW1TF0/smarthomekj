@@ -31,14 +31,14 @@ jobs:
           # The Pages address decides the sub-folder, e.g. /smarthomekj (empty with a custom domain).
           NEXT_PUBLIC_BASE_PATH: ${{ steps.pages.outputs.base_path }}
           NEXT_PUBLIC_SITE_URL: ${{ steps.pages.outputs.origin }}
-          # Firebase web config (project gift-529fb). It is public by design; firestore.rules protect the data.
+          # Firebase web config (project smarthomekj-ea651). It is public by design; firestore.rules protect the data.
           # A repository variable with the same name overrides the value here.
-          NEXT_PUBLIC_FIREBASE_API_KEY: ${{ vars.FIREBASE_API_KEY || 'AIzaSyAhgErcuuiVkMjiECyZZRoWf10YaGwZmEQ' }}
-          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ vars.FIREBASE_AUTH_DOMAIN || 'gift-529fb.firebaseapp.com' }}
-          NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID || 'gift-529fb' }}
-          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ vars.FIREBASE_STORAGE_BUCKET || 'gift-529fb.firebasestorage.app' }}
-          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ vars.FIREBASE_MESSAGING_SENDER_ID || '253814323089' }}
-          NEXT_PUBLIC_FIREBASE_APP_ID: ${{ vars.FIREBASE_APP_ID || '1:253814323089:web:09aacc119e7f6e9e55cc30' }}
+          NEXT_PUBLIC_FIREBASE_API_KEY: ${{ vars.FIREBASE_API_KEY || 'AIzaSyAxy6lpPyxw0nMs5fXk83BCdaMof-vDVfw' }}
+          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ vars.FIREBASE_AUTH_DOMAIN || 'smarthomekj-ea651.firebaseapp.com' }}
+          NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID || 'smarthomekj-ea651' }}
+          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ vars.FIREBASE_STORAGE_BUCKET || 'smarthomekj-ea651.firebasestorage.app' }}
+          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ vars.FIREBASE_MESSAGING_SENDER_ID || '994311642135' }}
+          NEXT_PUBLIC_FIREBASE_APP_ID: ${{ vars.FIREBASE_APP_ID || '1:994311642135:web:8a94b97c9f75053837d052' }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: out
