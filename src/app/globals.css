@@ -1,0 +1,306 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+
+  --color-ink: #1d1d1f;
+  --color-ink-2: #424245;
+  --color-mute: #6e6e73;
+  --color-faint: #86868b;
+  --color-line: #d2d2d7;
+  --color-paper: #ffffff;
+  --color-cloud: #f5f5f7;
+  --color-accent: #0071e3;
+  --color-accent-hover: #0077ed;
+  --color-link: #0066cc;
+  --color-night: #000000;
+  --color-night-2: #161617;
+  --color-success: #1d8a3a;
+  --color-danger: #d70015;
+
+  --radius-tile: 28px;
+  --ease-apple: cubic-bezier(0.28, 0.11, 0.32, 1);
+}
+
+:root {
+  color-scheme: light;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: 17px;
+  line-height: 1.47;
+  letter-spacing: -0.022em;
+}
+
+::selection {
+  background: rgba(0, 113, 227, 0.2);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+@layer components {
+/* Typography scale modelled on large, quiet product pages */
+.headline-hero {
+  font-size: clamp(48px, 8vw, 96px);
+  line-height: 1.04;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+}
+.headline-xl {
+  font-size: clamp(40px, 6vw, 72px);
+  line-height: 1.05;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+.headline-lg {
+  font-size: clamp(32px, 4.5vw, 56px);
+  line-height: 1.07;
+  font-weight: 700;
+  letter-spacing: -0.028em;
+}
+.headline-md {
+  font-size: clamp(24px, 3vw, 40px);
+  line-height: 1.1;
+  font-weight: 600;
+  letter-spacing: -0.022em;
+}
+.lead {
+  font-size: clamp(19px, 2vw, 28px);
+  line-height: 1.25;
+  font-weight: 500;
+  letter-spacing: -0.015em;
+}
+
+.text-gradient {
+  background: linear-gradient(90deg, #0090f7 0%, #ba62fc 50%, #f2416b 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.text-gradient-warm {
+  background: linear-gradient(90deg, #ff9500 0%, #ff2d55 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.section {
+  padding-block: clamp(80px, 12vw, 160px);
+}
+.container-apple {
+  width: 100%;
+  max-width: 1080px;
+  margin-inline: auto;
+  padding-inline: 22px;
+}
+.container-wide {
+  width: 100%;
+  max-width: 1440px;
+  margin-inline: auto;
+  padding-inline: 22px;
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 980px;
+  padding: 12px 24px;
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 1.18;
+  transition: background-color 0.2s var(--ease-apple), color 0.2s, transform 0.2s var(--ease-apple), box-shadow 0.2s;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn:active {
+  transform: scale(0.98);
+}
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.btn-primary {
+  background: var(--color-accent);
+  color: #fff;
+}
+.btn-primary:hover:not(:disabled) {
+  background: var(--color-accent-hover);
+}
+.btn-secondary {
+  border: 1px solid var(--color-accent);
+  color: var(--color-accent);
+}
+.btn-secondary:hover {
+  background: var(--color-accent);
+  color: #fff;
+}
+.btn-dark {
+  background: var(--color-ink);
+  color: #fff;
+}
+.btn-dark:hover {
+  background: #000;
+}
+.btn-sm {
+  padding: 8px 16px;
+  font-size: 14px;
+}
+.link-chevron {
+  color: var(--color-link);
+  font-size: inherit;
+}
+.link-chevron::after {
+  content: " ›";
+}
+.link-chevron:hover {
+  text-decoration: underline;
+}
+
+/* Glass navigation */
+.glass {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+}
+.glass-dark {
+  background: rgba(22, 22, 23, 0.8);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+}
+
+/* Tiles */
+.tile {
+  border-radius: var(--radius-tile);
+  overflow: hidden;
+  position: relative;
+  transition: transform 0.5s var(--ease-apple), box-shadow 0.5s var(--ease-apple);
+}
+.tile-hover:hover {
+  transform: scale(1.015);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
+}
+
+/* Form controls */
+.field {
+  width: 100%;
+  border: 1px solid var(--color-line);
+  border-radius: 12px;
+  padding: 14px 16px;
+  font-size: 17px;
+  background: #fff;
+  color: var(--color-ink);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.field:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.15);
+}
+.field[aria-invalid="true"] {
+  border-color: var(--color-danger);
+}
+.label {
+  display: block;
+  font-size: 14px;
+  color: var(--color-mute);
+  margin-bottom: 6px;
+}
+
+/* Scroll reveal */
+.reveal {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: opacity 1s var(--ease-apple), transform 1s var(--ease-apple);
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* Hero glow */
+.hero-glow {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(60% 50% at 50% 0%, rgba(0, 144, 247, 0.35), transparent 70%),
+    radial-gradient(40% 40% at 80% 30%, rgba(186, 98, 252, 0.3), transparent 70%),
+    radial-gradient(40% 40% at 20% 40%, rgba(242, 65, 107, 0.2), transparent 70%);
+  filter: blur(20px);
+  animation: glow 12s ease-in-out infinite alternate;
+}
+@keyframes glow {
+  from {
+    transform: scale(1) translateY(0);
+  }
+  to {
+    transform: scale(1.1) translateY(-20px);
+  }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+@keyframes pulse-ring {
+  0% { transform: scale(0.8); opacity: 0.8; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+.pulse-ring {
+  animation: pulse-ring 2.4s var(--ease-apple) infinite;
+}
+
+/* Legal text */
+.prose-legal h2 {
+  font-size: 24px;
+  font-weight: 600;
+  margin-top: 48px;
+  margin-bottom: 12px;
+  letter-spacing: -0.02em;
+}
+.prose-legal p {
+  color: var(--color-ink-2);
+  margin-bottom: 12px;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
+}
