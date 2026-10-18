@@ -29,17 +29,9 @@ Admin: http://localhost:3000/admin with `ADMIN_EMAIL` / `ADMIN_PASSWORD` from `.
 6. Have a lawyer review the legal texts in `src/i18n/legal/`.
 7. Re-check prices against eMAG/Ozone/Technopolis (see `docs/pricing-research.md`).
 
-## Put it online (Vercel, free)
+## Hosting
 
-GitHub Pages only serves static files, so it cannot run the shop, chat or admin panel. Vercel runs the site straight from this GitHub repo:
-
-1. Sign in at https://vercel.com with GitHub and click **Add New → Project → Import** `smarthomekj`.
-2. Before deploying, open **Storage → Create → Neon (Postgres)** and connect it to the project. It adds `DATABASE_URL` and `DATABASE_URL_UNPOOLED` for you.
-3. Under **Environment Variables** add at least `AUTH_SECRET` (any long random text), `ADMIN_EMAIL`, `ADMIN_PASSWORD` and `NEXT_PUBLIC_SITE_URL` (your Vercel address, later your domain). Add Stripe, SMTP and Anthropic keys when you have them.
-4. Click **Deploy**. Each build creates the tables and seeds products automatically (`vercel-build` script); every push to `main` redeploys.
-5. Optional: **Settings → Domains** to connect your own domain, e.g. smarthomekj.bg.
-
-Any other Node host with Postgres works too: `npm run setup && npm run build && npm start`.
+The site needs a Node server and a Postgres database: `npm run setup && npm run build && npm start`.
 
 ## Where things live
 
