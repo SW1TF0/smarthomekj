@@ -1,0 +1,177 @@
+rules_version = '2';
+
+// SmartHomeKJ: who may read and write what. Paste into Firebase console → Firestore → Rules → Publish.
+// Visitors can read the catalogue and settings and can only *create* their own submissions.
+// Everything else is for team members listed in /admins/{uid}.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function isTeam() { return signedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid)); }
+    function isOwner() { return isTeam() && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == "ADMIN"; }
+
+    function str(v, max) { return v is string && v.size() <= max; }
+    function reqStr(v, max) { return str(v, max) && v.size() > 0; }
+    function isEmail(v) { return reqStr(v, 200) && v.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"); }
+    function only(keys) { return request.resource.data.keys().hasOnly(keys); }
+    function now(field) { return request.resource.data[field] == request.time; }
+    function locale(v) { return v in ["bg", "en", "tr"]; }
+
+    // ---------- Public content ----------
+
+    match /products/{slug} {
+      allow get: if resource.data.active == true || isTeam();
+      allow list: if isTeam() || resource.data.active == true;
+      allow create, update: if isTeam();
+      allow delete: if isOwner();
+    }
+
+    match /faq/{id} {
+      allow read: if resource.data.active == true || isTeam();
+      allow write: if isTeam();
+    }
+
+    match /config/settings {
+      allow read: if true;
+      allow write: if isOwner();
+    }
+
+    // First run: config/setup does not exist, so the first signed-in person may make themselves the owner, once.
+    match /config/setup {
+      allow read: if true;
+      allow create: if signedIn()
+        && !exists(/databases/$(database)/documents/config/setup)
+        && request.resource.data.ownerUid == request.auth.uid
+        && existsAfter(/databases/$(database)/documents/admins/$(request.auth.uid));
+      allow update, delete: if false;
+    }
+
+    match /admins/{uid} {
+      allow read: if isTeam();
+      allow create: if isOwner()
+        || (signedIn() && uid == request.auth.uid
+            && !exists(/databases/$(database)/documents/config/setup)
+            && existsAfter(/databases/$(database)/documents/config/setup)
+            && request.resource.data.role == "ADMIN");
+      // Team members may only touch their own last-login time; the owner manages everything else.
+      allow update: if isOwner()
+        || (isTeam() && uid == request.auth.uid && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["lastLoginAt"]));
+      allow delete: if isOwner() && uid != request.auth.uid;
+    }
+
+    // ---------- Visitor submissions: create-only ----------
+
+    match /orders/{id} {
+      allow read, update: if isTeam();
+      allow delete: if false;
+      allow create: if reqStr(request.resource.data.number, 40)
+        && request.resource.data.paymentMethod in ["COD", "BANK"]
+        && locale(request.resource.data.locale)
+        && isEmail(request.resource.data.email)
+        && reqStr(request.resource.data.name, 120)
+        && reqStr(request.resource.data.phone, 40)
+        && reqStr(request.resource.data.address, 300)
+        && reqStr(request.resource.data.city, 120)
+        && reqStr(request.resource.data.postcode, 20)
+        && reqStr(request.resource.data.country, 60)
+        && str(request.resource.data.companyName, 200)
+        && str(request.resource.data.vatNumber, 40)
+        && str(request.resource.data.note, 2000)
+        && request.resource.data.items is list
+        && request.resource.data.items.size() > 0 && request.resource.data.items.size() <= 50
+        && request.resource.data.subtotalCents is int && request.resource.data.subtotalCents > 0
+        && request.resource.data.shippingCents is int && request.resource.data.shippingCents >= 0
+        && request.resource.data.totalCents == request.resource.data.subtotalCents + request.resource.data.shippingCents
+        && request.resource.data.vatCents is int
+        && request.resource.data.status == "PENDING"
+        && request.resource.data.paymentStatus == "UNPAID"
+        && now("createdAt") && now("termsAcceptedAt")
+        && only(["number", "paymentMethod", "locale", "email", "name", "phone", "address", "city", "postcode", "country",
+                 "companyName", "vatNumber", "note", "items", "subtotalCents", "shippingCents", "totalCents", "vatCents",
+                 "status", "paymentStatus", "createdAt", "termsAcceptedAt"]);
+    }
+
+    match /inquiries/{id} {
+      allow read, update, delete: if isTeam();
+      allow create: if reqStr(request.resource.data.name, 120)
+        && isEmail(request.resource.data.email)
+        && str(request.resource.data.phone, 40)
+        && str(request.resource.data['service'], 40)
+        && str(request.resource.data.propertyType, 40)
+        && reqStr(request.resource.data.message, 4000)
+        && locale(request.resource.data.locale)
+        && request.resource.data.status == "NEW" && now("createdAt")
+        && only(["name", "email", "phone", "service", "propertyType", "message", "locale", "status", "createdAt"]);
+    }
+
+    match /privacyRequests/{id} {
+      allow read, update: if isTeam();
+      allow delete: if isOwner();
+      allow create: if request.resource.data.type in ["ACCESS", "PORTABILITY", "RECTIFICATION", "ERASURE", "OBJECTION"]
+        && reqStr(request.resource.data.name, 120)
+        && isEmail(request.resource.data.email)
+        && str(request.resource.data.message, 4000)
+        && request.resource.data.status == "OPEN" && now("createdAt")
+        && only(["type", "name", "email", "message", "status", "createdAt"]);
+    }
+
+    match /withdrawals/{id} {
+      allow read, update: if isTeam();
+      allow delete: if isOwner();
+      allow create: if reqStr(request.resource.data.orderNumber, 40)
+        && reqStr(request.resource.data.name, 120)
+        && isEmail(request.resource.data.email)
+        && reqStr(request.resource.data.items, 2000)
+        && str(request.resource.data.reason, 2000)
+        && locale(request.resource.data.locale)
+        && request.resource.data.status == "RECEIVED" && now("createdAt")
+        && only(["orderNumber", "name", "email", "items", "reason", "locale", "status", "createdAt"]);
+    }
+
+    match /consents/{id} {
+      allow read: if isTeam();
+      allow create: if str(request.resource.data.visitorId, 80)
+        && request.resource.data.analytics is bool
+        && request.resource.data.marketing is bool
+        && str(request.resource.data.version, 20)
+        && str(request.resource.data.userAgent, 300)
+        && now("createdAt")
+        && only(["visitorId", "analytics", "marketing", "version", "userAgent", "createdAt"]);
+    }
+
+    // ---------- Support chat ----------
+    // Chat ids are random. A visitor who knows the id (kept in their browser) can read and write that chat only;
+    // listing chats is for the team.
+
+    match /chats/{chatId} {
+      allow get: if true;
+      allow list, delete: if isTeam();
+      allow create: if str(request.resource.data.visitorId, 80)
+        && locale(request.resource.data.locale)
+        && request.resource.data.mode == "BOT"
+        && request.resource.data.unreadForAdmin == true
+        && now("createdAt") && now("lastMessageAt")
+        && only(["visitorId", "locale", "mode", "unreadForAdmin", "createdAt", "lastMessageAt"]);
+      allow update: if isTeam()
+        || (resource.data.mode != "CLOSED"
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["mode", "visitorName", "visitorEmail", "unreadForAdmin", "lastMessageAt"])
+            && request.resource.data.mode in [resource.data.mode, "HUMAN"]
+            && request.resource.data.unreadForAdmin == true
+            && now("lastMessageAt")
+            && str(request.resource.data.get("visitorName", ""), 120)
+            && str(request.resource.data.get("visitorEmail", ""), 200));
+
+      match /messages/{messageId} {
+        allow read: if true;
+        allow delete: if isTeam();
+        allow update: if false;
+        allow create: if isTeam()
+          || (request.resource.data.role in ["USER", "BOT"]
+              && reqStr(request.resource.data.content, 2000)
+              && now("createdAt")
+              && only(["role", "content", "createdAt"])
+              && get(/databases/$(database)/documents/chats/$(chatId)).data.mode != "CLOSED");
+      }
+    }
+  }
+}

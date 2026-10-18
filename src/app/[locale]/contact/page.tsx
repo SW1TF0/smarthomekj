@@ -1,18 +1,15 @@
 import type { Metadata } from "next";
 import { ActionForm, Field, LinkedText, SelectField } from "@/components/action-form";
 import { resolveLocale, type LocaleParams } from "@/i18n/page";
-import { submitInquiry } from "@/lib/public-actions";
-import { getSettings } from "@/lib/settings";
+import { ContactInfo } from "@/components/contact-info";
 
 export async function generateMetadata({ params }: LocaleParams): Promise<Metadata> {
   const { dict } = await resolveLocale(params);
   return { title: dict.nav.contact, description: dict.contact.subtitle };
 }
 
-export default async function ContactPage({ params, searchParams }: LocaleParams & { searchParams: Promise<{ service?: string }> }) {
+export default async function ContactPage({ params }: LocaleParams) {
   const { locale, dict } = await resolveLocale(params);
-  const { service } = await searchParams;
-  const settings = await getSettings();
   const c = dict.contact;
 
   return (
@@ -24,7 +21,7 @@ export default async function ContactPage({ params, searchParams }: LocaleParams
         </div>
         <div className="mt-16 grid gap-10 md:grid-cols-[1fr_320px]">
           <ActionForm
-            action={submitInquiry}
+            kind="inquiry"
             locale={locale}
             submitLabel={c.submit}
             sendingLabel={dict.common.sending}
@@ -42,7 +39,8 @@ export default async function ContactPage({ params, searchParams }: LocaleParams
               label={c.fields.service}
               name="service"
               options={c.services}
-              defaultValue={service && service in c.services ? service : "full"}
+              defaultValue="full"
+              queryParam="service"
             />
             <Field label={c.fields.message} name="message" textarea required />
             <label className="flex items-start gap-3 text-[14px] text-ink-2">
@@ -53,39 +51,9 @@ export default async function ContactPage({ params, searchParams }: LocaleParams
             </label>
           </ActionForm>
 
-          <aside className="tile h-fit bg-cloud p-8">
-            <h2 className="text-[21px] font-semibold tracking-tight">{c.infoTitle}</h2>
-            <dl className="mt-5 space-y-4 text-[15px]">
-              <div>
-                <dt className="text-mute">Email</dt>
-                <dd>
-                  <a href={`mailto:${settings.email}`} className="text-link">
-                    {settings.email}
-                  </a>
-                </dd>
-              </div>
-              <div>
-                <dt className="text-mute">{c.fields.phone.replace(/\s*\(.*\)/, "")}</dt>
-                <dd>
-                  <a href={`tel:${settings.phone.replace(/[^+\d]/g, "")}`} className="text-link">
-                    {settings.phone}
-                  </a>
-                </dd>
-              </div>
-              <div>
-                <dt className="text-mute">{c.hours}</dt>
-                <dd>{settings.workingHours}</dd>
-              </div>
-              <div>
-                <dt className="text-mute">{dict.legal.imprint}</dt>
-                <dd>
-                  {settings.address}
-                  <br />
-                  {settings.city}
-                </dd>
-              </div>
-            </dl>
-          </aside>
+          <ContactInfo
+            labels={{ title: c.infoTitle, phone: c.fields.phone.replace(/\s*\(.*\)/, ""), hours: c.hours, address: dict.legal.imprint }}
+          />
         </div>
       </div>
     </section>

@@ -3,13 +3,15 @@
 import { useState, useTransition } from "react";
 import type { Locale } from "@/i18n/config";
 import { formatMoney, vatFromGross } from "@/lib/money";
-import { placeOrder } from "@/lib/order-actions";
-import { shippingFor, type ShippingRules } from "@/lib/shipping";
+import { shippingFor } from "@/lib/shipping";
+import { createOrder, loadProducts, newOrderNumber, useSettings, type OrderInput } from "@/lib/store";
 import { LinkedText } from "./action-form";
 import { useCart } from "./cart-provider";
 import { ProductVisual } from "./product-visual";
 
-type Method = "CARD" | "COD" | "BANK";
+type Method = "COD" | "BANK";
+
+export const LAST_ORDER_KEY = "shkj_last_order";
 
 type Labels = {
   checkout: {
@@ -33,21 +35,14 @@ type Labels = {
   error: string;
 };
 
-export function CheckoutForm({
-  locale,
-  labels,
-  rules,
-  methods,
-  seller,
-}: {
-  locale: Locale;
-  labels: Labels;
-  rules: ShippingRules;
-  methods: Method[];
-  seller: { legalName: string; address: string };
-}) {
+export function CheckoutForm({ locale, labels }: { locale: Locale; labels: Labels }) {
+  const s = useSettings();
+  const rules = { shippingCents: s.shippingCents, freeShippingFromCents: s.freeShippingFromCents };
+  const methods: Method[] = [...(s.codEnabled ? (["COD"] as const) : []), ...(s.bankTransferEnabled ? (["BANK"] as const) : [])];
+  const seller = { legalName: s.legalName, address: `${s.address}, ${s.city}` };
   const { items, subtotalCents, clear, ready } = useCart();
-  const [method, setMethod] = useState<Method>(methods[0] ?? "COD");
+  const [chosen, setMethod] = useState<Method | null>(null);
+  const method = chosen && methods.includes(chosen) ? chosen : (methods[0] ?? "COD");
   const [terms, setTerms] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [invalid, setInvalid] = useState<string[]>([]);
@@ -76,31 +71,56 @@ export function CheckoutForm({
     }
     const f = new FormData(form);
     const get = (k: string) => String(f.get(k) ?? "");
+    const required = ["name", "email", "phone", "address", "city", "postcode"];
+    const missing = required.filter((k) => get(k).trim().length < 2);
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(get("email").trim())) missing.push("email");
+    setInvalid(missing);
+    if (missing.length) {
+      setError(c.errors.invalid);
+      return;
+    }
     start(async () => {
       try {
-        const result = await placeOrder({
-          locale,
-          items: items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
-          name: get("name"),
-          email: get("email"),
-          phone: get("phone"),
-          address: get("address"),
-          city: get("city"),
-          postcode: get("postcode"),
-          country: "BG",
-          companyName: get("companyName") || undefined,
-          vatNumber: get("vatNumber") || undefined,
-          note: get("note") || undefined,
-          paymentMethod: method,
-          terms: true,
-        });
-        if (result.ok) {
-          clear();
-          window.location.href = result.redirect;
+        // Prices and stock come from the catalogue, not from the bag, so an old bag cannot set its own price.
+        const catalogue = await loadProducts();
+        const lines = items.map((i) => ({ item: i, product: catalogue.find((p) => p.slug === i.slug) }));
+        if (lines.some((l) => !l.product || l.product.stock < l.item.quantity)) {
+          setError(c.errors.stock);
           return;
         }
-        setInvalid(result.fields ?? []);
-        setError(result.error === "rate" ? labels.error : c.errors[result.error]);
+        const orderItems = lines.map(({ item, product }) => ({
+          slug: product!.slug,
+          name: item.name,
+          sku: product!.sku,
+          priceCents: product!.priceCents,
+          quantity: item.quantity,
+        }));
+        const subtotal = orderItems.reduce((n, i) => n + i.priceCents * i.quantity, 0);
+        const ship = shippingFor(subtotal, rules);
+        const order: OrderInput = {
+          number: newOrderNumber(),
+          paymentMethod: method,
+          locale,
+          name: get("name").trim(),
+          email: get("email").trim(),
+          phone: get("phone").trim(),
+          address: get("address").trim(),
+          city: get("city").trim(),
+          postcode: get("postcode").trim(),
+          country: "BG",
+          companyName: get("companyName").trim(),
+          vatNumber: get("vatNumber").trim(),
+          note: get("note").trim(),
+          items: orderItems,
+          subtotalCents: subtotal,
+          shippingCents: ship,
+          totalCents: subtotal + ship,
+          vatCents: vatFromGross(subtotal + ship),
+        };
+        await createOrder(order);
+        sessionStorage.setItem(LAST_ORDER_KEY, JSON.stringify({ ...order, placedAt: new Date().toISOString() }));
+        clear();
+        window.location.assign(`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/${locale}/checkout/success/`);
       } catch {
         setError(labels.error);
       }

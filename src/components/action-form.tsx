@@ -1,30 +1,34 @@
 "use client";
 
 import { useActionState, useEffect, useRef } from "react";
-import type { FormState } from "@/lib/public-actions";
+import { submitForm, type FormKind, type FormState } from "@/lib/forms";
 import { CheckIcon } from "./icons";
 
-/** Form wrapper for public server actions: success screen, error text and invalid-field highlighting. */
+export type Receipt = { title: string; print: string; receivedAt: string; fields: Record<string, string> };
+
+/** Public form: validates in the browser, stores in Firestore, then shows a success screen (or a printable receipt). */
 export function ActionForm({
-  action,
+  kind,
   locale,
   submitLabel,
   sendingLabel,
   successText,
   errorText,
   invalidText,
+  receipt,
   children,
 }: {
-  action: (state: FormState, form: FormData) => Promise<FormState>;
+  kind: FormKind;
   locale: string;
   submitLabel: string;
   sendingLabel: string;
   successText: string;
   errorText: string;
   invalidText: string;
+  receipt?: Receipt;
   children: React.ReactNode;
 }) {
-  const [state, formAction, pending] = useActionState(action, null);
+  const [state, formAction, pending] = useActionState((_: FormState, form: FormData) => submitForm(kind, form), null);
   const ref = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
@@ -37,16 +41,38 @@ export function ActionForm({
   if (state?.ok) {
     return (
       <div className="tile bg-cloud p-10 text-center" role="status">
-        <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-success text-white">
+        <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-success text-white print:hidden">
           <CheckIcon size={28} />
         </span>
         <p className="mt-5 text-[21px] font-semibold tracking-tight">{successText}</p>
+        {receipt && state.values && (
+          <div className="mx-auto mt-8 max-w-[480px] rounded-[20px] bg-white p-6 text-left text-[15px]">
+            <h2 className="text-[17px] font-semibold">{receipt.title}</h2>
+            <dl className="mt-4 space-y-2">
+              <div>
+                <dt className="text-[13px] text-mute">{receipt.receivedAt}</dt>
+                <dd>{new Date(state.at ?? Date.now()).toLocaleString(locale, { timeZone: "Europe/Sofia" })}</dd>
+              </div>
+              {Object.entries(receipt.fields).map(([key, label]) =>
+                state.values?.[key] ? (
+                  <div key={key}>
+                    <dt className="text-[13px] text-mute">{label}</dt>
+                    <dd className="whitespace-pre-wrap">{state.values[key]}</dd>
+                  </div>
+                ) : null,
+              )}
+            </dl>
+            <button type="button" onClick={() => window.print()} className="btn btn-secondary btn-sm mt-6 print:hidden">
+              {receipt.print}
+            </button>
+          </div>
+        )}
       </div>
     );
   }
 
   return (
-    <form ref={ref} action={formAction} className="space-y-5" noValidate={false}>
+    <form ref={ref} action={formAction} className="space-y-5">
       <input type="hidden" name="locale" value={locale} />
       <div className="hidden" aria-hidden="true">
         <label>
@@ -67,6 +93,16 @@ export function ActionForm({
   );
 }
 
+/** Fills a field from the page URL (e.g. ?order=KJ…), since static pages cannot read the query on the server. */
+function useQueryDefault(name: string, param?: string) {
+  useEffect(() => {
+    if (!param) return;
+    const value = new URLSearchParams(window.location.search).get(param);
+    const el = document.getElementById(`f-${name}`) as HTMLInputElement | HTMLSelectElement | null;
+    if (value && el && (el.tagName !== "SELECT" || [...(el as HTMLSelectElement).options].some((o) => o.value === value))) el.value = value;
+  }, [name, param]);
+}
+
 export function Field({
   label,
   name,
@@ -76,6 +112,7 @@ export function Field({
   defaultValue,
   autoComplete,
   rows = 5,
+  queryParam,
 }: {
   label: string;
   name: string;
@@ -85,8 +122,10 @@ export function Field({
   defaultValue?: string;
   autoComplete?: string;
   rows?: number;
+  queryParam?: string;
 }) {
   const id = `f-${name}`;
+  useQueryDefault(name, queryParam);
   return (
     <div>
       <label htmlFor={id} className="label">
@@ -108,13 +147,16 @@ export function SelectField({
   options,
   defaultValue,
   required,
+  queryParam,
 }: {
   label: string;
   name: string;
   options: Record<string, string>;
   defaultValue?: string;
   required?: boolean;
+  queryParam?: string;
 }) {
+  useQueryDefault(name, queryParam);
   return (
     <div>
       <label htmlFor={`f-${name}`} className="label">

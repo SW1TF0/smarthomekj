@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 export function PageHeader({ title, subtitle, action }: { title: string; subtitle?: string; action?: React.ReactNode }) {
   return (
     <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
@@ -53,7 +51,7 @@ export const statusTone: Record<string, string> = {
 export const statusLabel: Record<string, string> = {
   PENDING: "Чака",
   PAID: "Платена",
-  PROCESSING: "Обработва се",
+  PROCESSING: "Потвърдена",
   SHIPPED: "Изпратена",
   DELIVERED: "Доставена",
   CANCELLED: "Отказана",
@@ -73,7 +71,6 @@ export const statusLabel: Record<string, string> = {
   HUMAN: "Човек",
   CLOSED: "Затворен",
   UNPAID: "Неплатена",
-  CARD: "Карта",
   COD: "Наложен платеж",
   BANK: "Банков превод",
 };
@@ -113,22 +110,33 @@ export function Empty({ text }: { text: string }) {
   return <p className="rounded-[20px] bg-white p-10 text-center text-mute ring-1 ring-black/5">{text}</p>;
 }
 
-export function Filters({ base, current, options }: { base: string; current?: string; options: Record<string, string> }) {
+export function Filters({ current, options, onChange }: { current: string; options: Record<string, string>; onChange: (value: string) => void }) {
+  const pill = (value: string, label: string) => (
+    <button
+      key={value || "all"}
+      type="button"
+      onClick={() => onChange(value)}
+      aria-pressed={current === value}
+      className={`rounded-full px-3 py-1.5 text-[13px] ${current === value ? "bg-ink text-white" : "bg-white ring-1 ring-black/5"}`}
+    >
+      {label}
+    </button>
+  );
   return (
     <div className="mb-5 flex flex-wrap gap-2">
-      <Link href={base} className={`rounded-full px-3 py-1.5 text-[13px] ${!current ? "bg-ink text-white" : "bg-white ring-1 ring-black/5"}`}>
-        Всички
-      </Link>
-      {Object.entries(options).map(([value, label]) => (
-        <Link
-          key={value}
-          href={`${base}?status=${value}`}
-          className={`rounded-full px-3 py-1.5 text-[13px] ${current === value ? "bg-ink text-white" : "bg-white ring-1 ring-black/5"}`}
-        >
-          {label}
-        </Link>
-      ))}
+      {pill("", "Всички")}
+      {Object.entries(options).map(([value, label]) => pill(value, label))}
     </div>
+  );
+}
+
+export function Loading({ error }: { error?: string }) {
+  return error ? (
+    <p className="rounded-[20px] bg-red-50 p-6 text-[14px] text-danger" role="alert">
+      Грешка при зареждане: {error}
+    </p>
+  ) : (
+    <p className="p-10 text-center text-mute">Зареждане…</p>
   );
 }
 

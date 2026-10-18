@@ -21,13 +21,13 @@ const en: LegalDocs = (s) => ({
     {
       h: "3. AI-assisted support",
       p: [
-        "Our chat assistant may use an AI language model (Anthropic's Claude) to answer you. The chat always tells you that you are talking to an AI, and a member of our team can take over at any time. Messages are sent to the provider only to generate the answer. Please do not share card numbers, passwords or health data in the chat.",
+        "Our chat answers automatically from our FAQ, and a member of our team can take over at any time. Messages are stored so we can answer you. Please do not share card numbers, passwords or health data in the chat.",
       ],
     },
     {
       h: "4. Who receives your data",
       p: [
-        "We share data only with processors that help us run the shop: hosting provider, payment processor (Stripe Payments Europe, Ltd.) for card payments, courier companies for delivery, our accountant, email provider and, for the chat, Anthropic PBC. Every processor is bound by a data processing agreement.",
+        "We share data only with processors that help us run the shop: Google Ireland Ltd. (Firebase), which stores orders, requests and chat messages in the EU region we choose; GitHub, Inc., which hosts the website files and may log your IP address when pages load; courier companies for delivery; our accountant; and our email provider. Every processor is bound by a data processing agreement. Transfers to the USA rely on the EU-US Data Privacy Framework or standard contractual clauses.",
         "Some providers may process data outside the EEA (for example in the United States). In such cases transfers are based on an adequacy decision (EU–US Data Privacy Framework) or Standard Contractual Clauses.",
       ],
     },
@@ -47,7 +47,7 @@ const en: LegalDocs = (s) => ({
     {
       h: "7. Security",
       p: [
-        "The site uses encrypted HTTPS connections. Card details are entered directly with Stripe and never reach our servers. Access to the admin system is limited to authorised staff and protected by passwords and signed sessions.",
+        "The site uses encrypted HTTPS connections. We do not take card payments online. Access to the admin system is limited to authorised staff, protected by passwords, and enforced by database access rules.",
       ],
     },
   ],
@@ -64,7 +64,7 @@ const en: LegalDocs = (s) => ({
         "shkj_cart (local storage): keeps the contents of your bag until you clear it.",
         "shkj_visitor (local storage): a random identifier that lets the support chat show your conversation.",
         "shkj_admin: session for staff signed in to the admin panel, 12 hours.",
-        "Stripe sets its own necessary cookies on the payment page to prevent fraud.",
+        "Your bag, a random visitor ID and your chat ID are kept in your browser's local storage. They are needed for the shop and chat to work and are never used for tracking.",
       ],
     },
     {
@@ -94,12 +94,12 @@ const en: LegalDocs = (s) => ({
     {
       h: "3. How a contract is made",
       p: [
-        "You add products to the bag, enter your details, choose a payment method and click 'Order with obligation to pay'. The contract is concluded when we confirm your order by email. You can correct input errors at any step before you place the order. The contract language may be Bulgarian, English or Turkish. We store the contract and you receive it by email.",
+        "You add products to the bag, enter your details, choose a payment method and click 'Order with obligation to pay'. The contract is concluded when we confirm your order by email or phone. You can correct input errors at any step before you place the order. The contract language may be Bulgarian, English or Turkish. We store the contract. You can print or save it at the end of checkout, and you receive a copy with the delivery.",
       ],
     },
     {
       h: "4. Payment",
-      p: ["Card payment (via Stripe), cash on delivery or bank transfer. For bank transfer we ship after the payment is received."],
+      p: ["Cash on delivery or bank transfer. For bank transfer we ship after the payment is received."],
     },
     {
       h: "5. Delivery",
@@ -137,7 +137,7 @@ const en: LegalDocs = (s) => ({
       h: "Right of withdrawal",
       p: [
         "You have the right to withdraw from this contract within 14 days without giving any reason. The period ends 14 days after the day on which you, or a third party other than the carrier indicated by you, receives the goods.",
-        `To exercise the right, inform us (${s.legalName}, ${s.address}, ${s.city}, ${s.email}, ${s.phone}) of your decision with a clear statement. You can use the online 'Withdraw from a contract' form on this site, which we confirm by email, or the model form below, but it is not obligatory. It is enough to send your notice before the period expires.`,
+        `To exercise the right, inform us (${s.legalName}, ${s.address}, ${s.city}, ${s.email}, ${s.phone}) of your decision with a clear statement. You can use the online 'Withdraw from a contract' form on this site, which gives you a confirmation to save or print, or the model form below, but it is not obligatory. It is enough to send your notice before the period expires.`,
       ],
     },
     {

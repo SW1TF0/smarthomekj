@@ -22,13 +22,13 @@ const tr: LegalDocs = (s) => ({
     {
       h: "3. Yapay zeka destekli destek",
       p: [
-        "Sohbet asistanımız size yanıt vermek için bir yapay zeka dil modeli (Anthropic'in Claude modeli) kullanabilir. Sohbet her zaman bir yapay zekayla konuştuğunuzu belirtir ve ekibimizden biri istediği zaman devralabilir. Mesajlar sağlayıcıya yalnızca yanıt oluşturmak için gönderilir. Lütfen sohbette kart numarası, şifre veya sağlık verisi paylaşmayın.",
+        "Sohbetimiz SSS'mizden otomatik olarak yanıt verir ve ekibimizden biri istediği zaman devralabilir. Mesajlar size yanıt verebilmek için saklanır. Lütfen sohbette kart numarası, şifre veya sağlık verisi paylaşmayın.",
       ],
     },
     {
       h: "4. Verilerinizi kimler alır",
       p: [
-        "Verileri yalnızca mağazayı işletmemize yardımcı olan işleyicilerle paylaşırız: barındırma sağlayıcısı, kartlı ödemeler için ödeme kuruluşu (Stripe Payments Europe, Ltd.), teslimat için kargo şirketleri, muhasebecimiz, e-posta sağlayıcısı ve sohbet için Anthropic PBC. Her işleyici bir veri işleme sözleşmesiyle bağlıdır.",
+        "Verileri yalnızca mağazayı işletmemize yardımcı olan işleyicilerle paylaşırız: siparişleri, talepleri ve sohbet mesajlarını seçtiğimiz AB bölgesinde saklayan Google Ireland Ltd. (Firebase); site dosyalarını barındıran ve sayfalar yüklenirken IP adresinizi kaydedebilen GitHub, Inc.; teslimat için kargo şirketleri; muhasebecimiz; ve e-posta sağlayıcımız. Her işleyici bir veri işleme sözleşmesiyle bağlıdır. ABD'ye aktarımlar AB-ABD Veri Gizliliği Çerçevesine veya standart sözleşme maddelerine dayanır.",
         "Bazı sağlayıcılar verileri AEA dışında (örneğin ABD'de) işleyebilir. Bu durumlarda aktarımlar bir yeterlilik kararına (AB–ABD Veri Gizliliği Çerçevesi) veya Standart Sözleşme Maddelerine dayanır.",
       ],
     },
@@ -48,7 +48,7 @@ const tr: LegalDocs = (s) => ({
     {
       h: "7. Güvenlik",
       p: [
-        "Site şifreli HTTPS bağlantıları kullanır. Kart bilgileri doğrudan Stripe'a girilir ve sunucularımıza asla ulaşmaz. Yönetim sistemine erişim yetkili personelle sınırlıdır ve şifreler ve imzalı oturumlarla korunur.",
+        "Site şifreli HTTPS bağlantıları kullanır. Online kartlı ödeme almıyoruz. Yönetim sistemine erişim yetkili personelle sınırlıdır; şifreler ve veritabanı erişim kurallarıyla korunur.",
       ],
     },
   ],
@@ -65,7 +65,7 @@ const tr: LegalDocs = (s) => ({
         "shkj_cart (yerel depolama): siz temizleyene kadar sepetinizin içeriğini tutar.",
         "shkj_visitor (yerel depolama): destek sohbetinin konuşmanızı göstermesini sağlayan rastgele bir kimlik.",
         "shkj_admin: yönetim paneline giriş yapan personel için oturum, 12 saat.",
-        "Stripe, dolandırıcılığı önlemek için ödeme sayfasında kendi zorunlu çerezlerini kullanır.",
+        "Sepetiniz, rastgele bir ziyaretçi kimliği ve sohbet kimliğiniz tarayıcınızın yerel depolamasında tutulur. Mağazanın ve sohbetin çalışması için gereklidir ve asla takip için kullanılmaz.",
       ],
     },
     {
@@ -93,10 +93,10 @@ const tr: LegalDocs = (s) => ({
     {
       h: "3. Sözleşmenin kurulması",
       p: [
-        "Ürünleri sepete ekler, bilgilerinizi girer, bir ödeme yöntemi seçer ve 'Ödeme yükümlülüğü ile sipariş ver' düğmesine tıklarsınız. Sözleşme, siparişinizi e-postayla onayladığımızda kurulur. Sipariş vermeden önce her adımda giriş hatalarını düzeltebilirsiniz. Sözleşme dili Bulgarca, İngilizce veya Türkçe olabilir. Sözleşmeyi saklarız ve size e-postayla iletilir.",
+        "Ürünleri sepete ekler, bilgilerinizi girer, bir ödeme yöntemi seçer ve 'Ödeme yükümlülüğü ile sipariş ver' düğmesine tıklarsınız. Sözleşme, siparişinizi e-posta veya telefonla onayladığımızda kurulur. Sipariş vermeden önce her adımda giriş hatalarını düzeltebilirsiniz. Sözleşme dili Bulgarca, İngilizce veya Türkçe olabilir. Sözleşmeyi saklarız. Siparişin sonunda yazdırabilir veya kaydedebilirsiniz; bir kopyası teslimatla birlikte gelir.",
       ],
     },
-    { h: "4. Ödeme", p: ["Kartla (Stripe üzerinden), kapıda ödeme veya banka havalesi. Havalede ödeme ulaştıktan sonra kargolarız."] },
+    { h: "4. Ödeme", p: ["Kapıda ödeme veya banka havalesi. Havalede ödeme ulaştıktan sonra kargolarız."] },
     {
       h: "5. Teslimat",
       p: ["Bulgaristan içinde kargoyla, genellikle 1–3 iş günü içinde ve en geç 30 gün içinde teslim ederiz. Risk, siz veya belirttiğiniz kişi ürünü teslim aldığında size geçer."],
@@ -129,7 +129,7 @@ const tr: LegalDocs = (s) => ({
       h: "Cayma hakkı",
       p: [
         "Bu sözleşmeden herhangi bir gerekçe göstermeden 14 gün içinde cayma hakkınız vardır. Süre, sizin veya taşıyıcı dışında belirttiğiniz üçüncü bir kişinin ürünü teslim aldığı günden itibaren 14 gün sonra sona erer.",
-        `Bu hakkı kullanmak için kararınızı açık bir beyanla bize (${s.legalName}, ${s.address}, ${s.city}, ${s.email}, ${s.phone}) bildirin. Sitedeki ve e-postayla onayladığımız online 'Sözleşmeden cayma' formunu veya aşağıdaki örnek formu kullanabilirsiniz, ancak zorunlu değildir. Bildiriminizi süre dolmadan göndermeniz yeterlidir.`,
+        `Bu hakkı kullanmak için kararınızı açık bir beyanla bize (${s.legalName}, ${s.address}, ${s.city}, ${s.email}, ${s.phone}) bildirin. Size kaydedilebilir veya yazdırılabilir bir onay veren sitedeki online 'Sözleşmeden cayma' formunu veya aşağıdaki örnek formu kullanabilirsiniz, ancak zorunlu değildir. Bildiriminizi süre dolmadan göndermeniz yeterlidir.`,
       ],
     },
     {

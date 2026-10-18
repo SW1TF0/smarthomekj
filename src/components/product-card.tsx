@@ -2,12 +2,12 @@ import Link from "next/link";
 import type { Locale } from "@/i18n/config";
 import type { Dictionary } from "@/i18n";
 import { formatMoney } from "@/lib/money";
-import type { ProductView } from "@/lib/products";
+import { productHref, type ProductView } from "@/lib/products";
 import { AddToCartButton } from "./add-to-cart";
 import { ProductVisual } from "./product-visual";
 
 export function ProductCard({ product, locale, dict }: { product: ProductView; locale: Locale; dict: Dictionary }) {
-  const href = `/${locale}/shop/${product.slug}`;
+  const href = productHref(locale, product.slug);
   return (
     <article className="tile tile-hover group flex flex-col bg-cloud">
       <Link href={href} className="block" tabIndex={-1} aria-hidden="true">

@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Locale } from "@/i18n/config";
+import { faqAnswer, postChatMessage, requestHuman, startChat, useSettings, watchChat, type ChatMode, type ChatRole } from "@/lib/store";
 import { getVisitorId } from "./cookie-banner";
 import { ChatIcon, CloseIcon, LogoMark, PersonIcon, SendIcon } from "./icons";
 
-type Message = { id: string; role: "USER" | "BOT" | "ADMIN" | "SYSTEM"; content: string; createdAt: string };
+type Message = { id: string; role: ChatRole; content: string };
 
 type Labels = {
   open: string;
@@ -16,8 +17,10 @@ type Labels = {
   placeholder: string;
   send: string;
   aiDisclosure: string;
+  fallback: string;
   privacy: string;
   human: string;
+  humanRequested: string;
   error: string;
   you: string;
   team: string;
@@ -28,108 +31,101 @@ const CONV_KEY = "shkj_chat_conversation";
 export function ChatWidget({
   locale,
   labels,
-  botName,
   privacyHref,
   privacyLabel,
 }: {
   locale: Locale;
   labels: Labels;
-  botName: string;
   privacyHref: string;
   privacyLabel: string;
 }) {
+  const settings = useSettings();
+  const botName = settings.chatBotName;
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [pending, setPending] = useState<Message[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(null);
-  const [mode, setMode] = useState<"BOT" | "HUMAN" | "CLOSED">("BOT");
+  const [mode, setMode] = useState<ChatMode>("BOT");
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
-  const lastAt = useRef<string | null>(null);
-
-  const append = useCallback((incoming: Message[]) => {
-    if (!incoming.length) return;
-    setMessages((current) => {
-      const ids = new Set(current.map((m) => m.id));
-      const merged = [...current, ...incoming.filter((m) => !ids.has(m.id))];
-      lastAt.current = merged[merged.length - 1]?.createdAt ?? lastAt.current;
-      return merged;
-    });
-  }, []);
-
-  const poll = useCallback(
-    async (convId: string) => {
-      const params = new URLSearchParams({ conversationId: convId, visitorId: getVisitorId() });
-      if (lastAt.current) params.set("after", lastAt.current);
-      const res = await fetch(`/api/chat?${params}`);
-      if (!res.ok) {
-        if (res.status === 404) {
-          localStorage.removeItem(CONV_KEY);
-          setConversationId(null);
-          setMessages([]);
-        }
-        return;
-      }
-      const data = await res.json();
-      setMode(data.mode);
-      append(data.messages);
-    },
-    [append],
-  );
 
   // Restore an earlier conversation when the panel opens.
   useEffect(() => {
-    if (!open) return;
+    if (!open || conversationId) return;
     const saved = localStorage.getItem(CONV_KEY);
-    if (saved && !conversationId) {
-      setConversationId(saved);
-      poll(saved);
-    }
-  }, [open, conversationId, poll]);
+    if (saved) setConversationId(saved);
+  }, [open, conversationId]);
 
-  // Pick up replies from the team while the panel is open.
+  // Live updates: bot answers and replies from the team arrive through Firestore.
   useEffect(() => {
-    if (!open || !conversationId) return;
-    const timer = setInterval(() => poll(conversationId), 4000);
-    return () => clearInterval(timer);
-  }, [open, conversationId, poll]);
+    if (!conversationId) return;
+    return watchChat(
+      conversationId,
+      setMode,
+      (rows) => {
+        setMessages(rows);
+        setPending([]);
+      },
+      () => {
+        localStorage.removeItem(CONV_KEY);
+        setConversationId(null);
+        setMessages([]);
+      },
+    );
+  }, [conversationId]);
 
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages, busy, open]);
+  }, [messages, pending, busy, open]);
 
-  async function send(text: string, requestHuman = false) {
+  async function ensureConversation() {
+    if (conversationId) return conversationId;
+    const id = await startChat(getVisitorId(), locale);
+    localStorage.setItem(CONV_KEY, id);
+    setConversationId(id);
+    return id;
+  }
+
+  async function send(text: string) {
     const content = text.trim();
-    if ((!content && !requestHuman) || busy) return;
+    if (!content || busy) return;
     setBusy(true);
     setError(false);
-    if (content) {
-      append([{ id: `local-${Date.now()}`, role: "USER", content, createdAt: new Date().toISOString() }]);
-    }
+    setPending([{ id: "pending", role: "USER", content }]);
     setInput("");
     try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ conversationId, visitorId: getVisitorId(), message: content, locale, requestHuman }),
-      });
-      if (!res.ok) throw new Error();
-      const data = await res.json();
-      if (data.conversationId !== conversationId) {
-        setConversationId(data.conversationId);
-        localStorage.setItem(CONV_KEY, data.conversationId);
+      const id = await ensureConversation();
+      await postChatMessage(id, "USER", content);
+      if (mode === "BOT") {
+        const answer = await faqAnswer(content, locale);
+        await postChatMessage(id, "BOT", answer ?? labels.fallback.replace("{email}", settings.email).replace("{phone}", settings.phone));
       }
-      setMode(data.mode);
-      // Replace the optimistic message with the stored one.
-      setMessages((current) => current.filter((m) => !m.id.startsWith("local-")));
-      append(data.messages);
+    } catch {
+      setPending([]);
+      setError(true);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function askForPerson() {
+    if (busy) return;
+    setBusy(true);
+    setError(false);
+    try {
+      const id = await ensureConversation();
+      await requestHuman(id, "", "");
+      await postChatMessage(id, "BOT", labels.humanRequested);
     } catch {
       setError(true);
     } finally {
       setBusy(false);
     }
   }
+
+  if (!settings.chatEnabled) return null;
 
   const greeting = labels.greeting.replace("{bot}", botName);
   const [privacyBefore, privacyAfter] = labels.privacy.split("{privacy}");
@@ -171,7 +167,7 @@ export function ChatWidget({
           <div ref={listRef} className="flex-1 space-y-3 overflow-y-auto px-4 py-4" aria-live="polite">
             <p className="rounded-2xl bg-cloud px-4 py-3 text-[12px] leading-snug text-mute">{labels.aiDisclosure}</p>
             <Bubble role="BOT" content={greeting} />
-            {messages.map((m) => (
+            {[...messages, ...pending].map((m) => (
               <Bubble key={m.id} role={m.role} content={m.content} />
             ))}
             {busy && (
@@ -192,7 +188,7 @@ export function ChatWidget({
             {mode === "BOT" && messages.length > 0 && (
               <button
                 type="button"
-                onClick={() => send("", true)}
+                onClick={askForPerson}
                 disabled={busy}
                 className="mb-2 w-full rounded-full bg-cloud px-3 py-1.5 text-[12px] text-ink-2 hover:bg-line/60"
               >
