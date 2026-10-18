@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { HomeShowcase } from "@/components/home-showcase";
 import { FeaturedProducts } from "@/components/product-lists";
 import { CategoryWidget } from "@/components/category-widget";
+import { CheckIcon } from "@/components/icons";
 import { Reveal } from "@/components/reveal";
 import { isLocale } from "@/i18n/config";
 import { getDictionary } from "@/i18n";
@@ -109,6 +110,37 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         </div>
       </section>
 
+      {/* Try before you buy: live demo and price calculator */}
+      <section className="section">
+        <div className="container-wide">
+          <Reveal>
+            <h2 className="headline-lg text-center">{h.tryTitle}</h2>
+          </Reveal>
+          <div className="mt-14 grid gap-4 md:grid-cols-2">
+            {h.try.map((item, i) => {
+              const dark = item.key === "demo";
+              return (
+                <Reveal key={item.key} delay={i * 80}>
+                  <Link
+                    href={`/${locale}/${item.key}`}
+                    className={`tile tile-hover flex h-full min-h-[440px] flex-col justify-between p-8 md:min-h-[500px] md:p-10 ${dark ? "bg-night text-white" : "bg-cloud"}`}
+                  >
+                    <div>
+                      <h3 className="headline-md">{item.title}</h3>
+                      <p className={`mt-3 max-w-[420px] text-[17px] ${dark ? "text-white/60" : "text-mute"}`}>{item.text}</p>
+                      <span className={`mt-4 inline-block text-[17px] ${dark ? "text-[#2997ff]" : "text-link"}`}>{item.link} ›</span>
+                    </div>
+                    <div className="mt-10 flex justify-center">
+                      {dark ? <DemoTeaser rooms={dict.demo.rooms} /> : <CalculatorTeaser systems={dict.calculator.systems} />}
+                    </div>
+                  </Link>
+                </Reveal>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
       {/* Stats */}
       <section className="section">
         <div className="container-apple">
@@ -185,11 +217,56 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         <Reveal className="container-apple text-center">
           <h2 className="headline-xl">{h.ctaTitle}</h2>
           <p className="lead mx-auto mt-5 max-w-[600px] text-mute">{h.ctaText}</p>
-          <Link href={`/${locale}/contact`} className="btn btn-primary mt-10 !px-8 !py-4 !text-[19px]">
+          <Link href={`/${locale}/contact`} className="btn btn-primary mt-10 max-w-full !whitespace-normal !px-7 !py-4 text-center !text-[17px] sm:!px-8 sm:!text-[19px]">
             {h.ctaPrimary}
           </Link>
         </Reveal>
       </section>
     </>
+  );
+}
+
+/** A small lit floor plan: the demo in one glance. */
+function DemoTeaser({ rooms }: { rooms: Record<string, string> }) {
+  const cells = [
+    { id: "living", span: "col-span-2 row-span-2", glow: 0.9 },
+    { id: "kitchen", span: "", glow: 0.55 },
+    { id: "bedroom", span: "", glow: 0 },
+    { id: "kids", span: "", glow: 0.35 },
+    { id: "bath", span: "", glow: 0 },
+  ];
+  return (
+    <div className="grid w-full max-w-[420px] grid-cols-4 grid-rows-2 gap-1.5 rounded-[22px] bg-[#2c2c2e] p-1.5" aria-hidden="true">
+      {cells.map((c) => (
+        <div
+          key={c.id}
+          className={`relative flex min-h-[92px] items-start justify-center rounded-[16px] bg-[#1c1c1e] p-2 ${c.span}`}
+          style={c.glow ? { background: `radial-gradient(70% 70% at 50% 45%, rgba(255,211,124,${c.glow}), rgba(255,181,71,${c.glow * 0.25}) 70%, #1c1c1e)` } : undefined}
+        >
+          <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${c.glow > 0.5 ? "bg-white/85 text-ink" : "bg-black/50 text-white"}`}>{rooms[c.id]}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** Three of the calculator's choices, two switched on. */
+function CalculatorTeaser({ systems }: { systems: Record<string, { title: string }> }) {
+  const rows = [
+    { key: "lighting", on: true },
+    { key: "sensors", on: true },
+    { key: "cameras", on: false },
+  ];
+  return (
+    <div className="w-full max-w-[360px] space-y-2" aria-hidden="true">
+      {rows.map((r) => (
+        <div key={r.key} className={`flex items-center justify-between rounded-[18px] bg-white px-5 py-4 ${r.on ? "ring-2 ring-accent" : "ring-1 ring-line"}`}>
+          <span className="text-[17px] font-semibold">{systems[r.key].title}</span>
+          <span className={`flex h-6 w-6 items-center justify-center rounded-full ${r.on ? "bg-accent text-white" : "ring-1 ring-line"}`}>
+            {r.on && <CheckIcon size={15} strokeWidth={2.4} />}
+          </span>
+        </div>
+      ))}
+    </div>
   );
 }

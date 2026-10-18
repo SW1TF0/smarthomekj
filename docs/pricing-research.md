@@ -24,6 +24,8 @@ eMAG, Ozone and Technopolis could not be read automatically, so check those by h
 | Sonos Era 100 | 198.00 | homekitfit.com (amco.bg 199) | **189.90** |
 | Apple HomePod mini (1st gen) | 129.00 | citytel.bg | **124.90** |
 | TP-Link Deco BE25, 2-pack | 199.00 (sold out); 207.95 | desktop.bg / jarcomputers.com | **192.90** |
+| Shelly 2PM Gen3 (for blinds) | 49.99 for a 2-pack (25.00 each) | jarcomputers.com | **23.90** |
+| Shelly Plus Smoke | 51.12 | jarcomputers.com | **47.90** |
 
 Notes
 - Price-comparison sites (pazaruvaj.com) showed some lower "from" prices that could not be verified
@@ -32,3 +34,19 @@ Notes
 - Do not use the "previous price" field for these: under the EU Price Indication rules a crossed-out
   price must be your own lowest price of the last 30 days.
 - Change prices any time in Admin → Products.
+
+## Installation prices used by the calculator
+
+Labour only, in EUR incl. 20% VAT. The calculator shows a range: the low end is the visit plus
+each device's rate; the high end is 25% more. Change them in Admin → Settings → "Калкулатор".
+
+| Work | Our rate | What competitors charge |
+|---|---|---|
+| Visit, setup and app training (once per job) | **39.00** | Technician visit 33–50 per started hour, excl. VAT (videokameri.com, valtonbg.com, cnwsolution.com, syb-bg.com) |
+| Pairing a sensor, bulb, plug, speaker or Wi-Fi unit | **6.00** | No smart-home price found; router or phone setup 8.80 (videokameri.com) |
+| Relay behind a switch or blinds module | **12.00** | Switch swap 10–25, light fitting 15–40, per wiring point 20–45 (namerimaistor.eu/maistori/elektro) |
+| Camera on a wall | **29.00** | IP camera 33–45 excl. VAT, i.e. 40–54 incl. VAT (valtonbg.com, videokameri.com, cnwsolution.com) |
+| Lock, doorbell, thermostat, energy meter | **39.00** | Video doorbell on existing wiring 80–160; electric lock wiring 40–100 (namerimaistor.eu, Oct 2026) |
+
+No Bulgarian page listed a price for installing a smart lock, thermostat or Shelly relay as such,
+so those rates are set below the closest electrician and door-entry jobs above.

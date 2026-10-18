@@ -14,6 +14,8 @@ type Labels = {
   about: string;
   contact: string;
   faq: string;
+  demo: string;
+  calculator: string;
   cart: string;
   consultation: string;
   menu: string;
@@ -38,11 +40,14 @@ export function SiteHeader({ locale, labels }: { locale: Locale; labels: Labels 
 
   const links = [
     { href: `/${locale}/solutions`, label: labels.solutions },
+    { href: `/${locale}/demo`, label: labels.demo },
+    { href: `/${locale}/calculator`, label: labels.calculator },
     { href: `/${locale}/shop`, label: labels.shop },
-    { href: `/${locale}/about`, label: labels.about },
     { href: `/${locale}/faq`, label: labels.faq },
     { href: `/${locale}/contact`, label: labels.contact },
   ];
+  // "About" lives in the footer and the phone menu, so the top bar fits on tablets.
+  const mobileLinks = [{ href: `/${locale}`, label: labels.home }, ...links.slice(0, 4), { href: `/${locale}/about`, label: labels.about }, ...links.slice(4)];
 
   // Path without the locale prefix, used to switch language on the same page.
   const rest = pathname.replace(/^\/(bg|en|tr)/, "");
@@ -60,7 +65,7 @@ export function SiteHeader({ locale, labels }: { locale: Locale; labels: Labels 
             <span>SmartHomeKJ</span>
           </Link>
 
-          <ul className="hidden md:flex items-center gap-8">
+          <ul className="hidden md:flex items-center gap-5 lg:gap-8">
             {links.map((l) => (
               <li key={l.href}>
                 <Link
@@ -139,7 +144,7 @@ export function SiteHeader({ locale, labels }: { locale: Locale; labels: Labels 
       {open && (
         <div id="mobile-menu" className="md:hidden fixed inset-x-0 top-12 bottom-0 bg-white/95 backdrop-blur-xl">
           <ul className="container-wide pt-6 space-y-1">
-            {[{ href: `/${locale}`, label: labels.home }, ...links].map((l, i) => (
+            {mobileLinks.map((l, i) => (
               <li key={l.href} style={{ animation: `fadeUp .5s ${i * 40}ms both` }}>
                 <Link href={l.href} className="block py-3 text-[28px] font-semibold tracking-tight">
                   {l.label}

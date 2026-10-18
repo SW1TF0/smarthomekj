@@ -21,6 +21,11 @@ export type SiteSettings = {
   chatBotName: string;
   instagram: string;
   facebook: string;
+  installBaseCents: number;
+  installPairCents: number;
+  installWallCents: number;
+  installMountCents: number;
+  installProCents: number;
 };
 
 // Placeholders are marked with [ ] so they are easy to spot on the live site
@@ -48,4 +53,10 @@ export const defaultSettings: SiteSettings = {
   chatBotName: "KJ Assistant",
   instagram: "",
   facebook: "",
+  // Installation rates used by the price calculator (gross, VAT included).
+  installBaseCents: 3900,
+  installPairCents: 600,
+  installWallCents: 1200,
+  installMountCents: 2900,
+  installProCents: 3900,
 };
