@@ -11,6 +11,7 @@ import {
   CameraIcon,
   CategoryIcon,
   CheckIcon,
+  ChevronRight,
   DropIcon,
   FilmIcon,
   HouseIcon,
@@ -20,8 +21,13 @@ import {
   MinusIcon,
   MoonIcon,
   MotionIcon,
+  NextIcon,
+  PauseIcon,
+  PlayIcon,
   PlusIcon,
+  PrevIcon,
   SmokeIcon,
+  SpeakerIcon,
   SunIcon,
   SunriseIcon,
   SunsetIcon,
@@ -48,6 +54,7 @@ type Toast = {
   id: number;
   title: string;
   text: string;
+  icon: React.ReactNode;
   alert?: boolean;
   camera?: boolean;
   actions: { label: string; primary?: boolean; run: () => void }[];
@@ -55,6 +62,7 @@ type Toast = {
 
 const AMBIENT = 19;
 const STEP_MS = 380;
+const BLUE = "#0a84ff";
 const fill = (template: string, values: Record<string, string | number>) => template.replace(/\{(\w+)\}/g, (_, k: string) => String(values[k] ?? ""));
 
 function initialState(plan: Plan): HomeState {
@@ -62,7 +70,7 @@ function initialState(plan: Plan): HomeState {
   for (const r of plan.rooms) {
     rooms[r.id] = {
       light: r.id === "living",
-      level: r.id === "living" ? 60 : 70,
+      level: 70,
       blinds: 100,
       heat: !!r.heat && ["living", "bedroom", "kids"].includes(r.id),
       target: r.id === "bath" ? 23 : 21.5,
@@ -87,14 +95,37 @@ export function SmartHomeDemo({ locale, t }: { locale: Locale; t: Labels }) {
   const [selected, setSelected] = useState<RoomId>("living");
   const [scene, setScene] = useState<{ id: SceneId; run: number; done: number; steps: string[] } | null>(null);
   const [toast, setToast] = useState<Toast | null>(null);
+  const [track, setTrack] = useState(0);
+  const [moving, setMoving] = useState<{ id: RoomId; dir: 1 | -1 } | null>(null);
   const timers = useRef<number[]>([]);
+  const blindsTimer = useRef<number | null>(null);
 
+  const stopBlinds = () => {
+    if (blindsTimer.current !== null) window.clearInterval(blindsTimer.current);
+    blindsTimer.current = null;
+    setMoving(null);
+  };
   const clearTimers = () => {
     timers.current.forEach((id) => window.clearTimeout(id));
     timers.current = [];
+    stopBlinds();
   };
   const later = (ms: number, fn: () => void) => timers.current.push(window.setTimeout(fn, ms));
   useEffect(() => clearTimers, []);
+
+  // Blinds move a step at a time, like the real motor, and stop at the end.
+  function moveBlinds(id: RoomId, dir: 1 | -1) {
+    stopBlinds();
+    setMoving({ id, dir });
+    blindsTimer.current = window.setInterval(() => {
+      setState((s) => ({ ...s, rooms: { ...s.rooms, [id]: { ...s.rooms[id]!, blinds: Math.min(100, Math.max(0, s.rooms[id]!.blinds + dir * 5)) } } }));
+    }, 90);
+  }
+  useEffect(() => {
+    if (!moving) return;
+    const b = state.rooms[moving.id]?.blinds;
+    if (b === undefined || (moving.dir > 0 ? b >= 100 : b <= 0)) stopBlinds();
+  }, [state, moving]);
 
   const temp = useMemo(() => new Intl.NumberFormat({ bg: "bg-BG", en: "en-IE", tr: "tr-TR" }[locale], { minimumFractionDigits: 1, maximumFractionDigits: 1 }), [locale]);
   const deg = useCallback((n: number) => `${temp.format(n)}°`, [temp]);
@@ -207,6 +238,7 @@ export function SmartHomeDemo({ locale, t }: { locale: Locale; t: Labels }) {
       show({
         title: n.doorbellTitle,
         text: n.doorbellText,
+        icon: <BellIcon size={18} />,
         camera: true,
         actions: [
           {
@@ -214,7 +246,7 @@ export function SmartHomeDemo({ locale, t }: { locale: Locale; t: Labels }) {
             primary: true,
             run: () => {
               setState((s) => ({ ...s, locked: false, ringing: false }));
-              show({ title: n.unlockedTitle, text: n.unlockedText, actions: [] }, 3200);
+              show({ title: n.unlockedTitle, text: n.unlockedText, icon: <UnlockIcon size={18} />, actions: [] }, 3200);
             },
           },
           { label: n.close, run: close },
@@ -226,6 +258,7 @@ export function SmartHomeDemo({ locale, t }: { locale: Locale; t: Labels }) {
       show({
         title: n.leakTitle,
         text: n.leakText,
+        icon: <DropIcon size={18} />,
         alert: true,
         actions: [
           {
@@ -244,6 +277,7 @@ export function SmartHomeDemo({ locale, t }: { locale: Locale; t: Labels }) {
       show({
         title: fill(n.windowTitle, { room: roomName("bedroom") }),
         text: n.windowText,
+        icon: <WindowIcon size={18} />,
         actions: [
           {
             label: n.windowClose,
@@ -267,6 +301,7 @@ export function SmartHomeDemo({ locale, t }: { locale: Locale; t: Labels }) {
       show({
         title: armed ? n.alarmTitle : n.motionTitle,
         text: armed ? n.alarmText : n.motionText,
+        icon: <MotionIcon size={18} />,
         alert: armed,
         camera: armed,
         actions: [{ label: n.ok, primary: true, run: close }],
@@ -300,402 +335,465 @@ export function SmartHomeDemo({ locale, t }: { locale: Locale; t: Labels }) {
   const calcHref = `/${locale}/calculator/?type=${plan.id}&rooms=${plan.calcRooms}&sys=lighting.access.cameras.heating.blinds.sensors.sound`;
 
   const sceneButtons: { id: SceneId; icon: React.ReactNode; tint: string }[] = [
-    { id: "morning", icon: <SunriseIcon size={20} />, tint: "bg-[#ff9f0a]" },
-    { id: "away", icon: <LeaveIcon size={20} />, tint: "bg-[#0a84ff]" },
-    { id: "evening", icon: <SunsetIcon size={20} />, tint: "bg-[#ff6b3d]" },
-    { id: "movie", icon: <FilmIcon size={20} />, tint: "bg-[#bf5af2]" },
-    { id: "night", icon: <MoonIcon size={20} />, tint: "bg-[#5e5ce6]" },
+    { id: "morning", icon: <SunriseIcon size={24} />, tint: "bg-[#ffb800]" },
+    { id: "away", icon: <LeaveIcon size={24} />, tint: "bg-[#34c759]" },
+    { id: "evening", icon: <SunsetIcon size={24} />, tint: "bg-[#7d7aff]" },
+    { id: "movie", icon: <FilmIcon size={24} />, tint: "bg-[#ff6482]" },
+    { id: "night", icon: <MoonIcon size={24} />, tint: "bg-[#5e8bff]" },
   ];
-  const eventButtons: { id: EventId; icon: React.ReactNode }[] = [
-    { id: "doorbell", icon: <BellIcon size={18} /> },
-    { id: "leak", icon: <DropIcon size={18} /> },
-    { id: "window", icon: <WindowIcon size={18} /> },
-    { id: "motion", icon: <MotionIcon size={18} /> },
+  const eventButtons: { id: EventId; icon: React.ReactNode; tint: string }[] = [
+    { id: "doorbell", icon: <BellIcon size={22} />, tint: "bg-[#ff3b30]/10 text-[#e0301e]" },
+    { id: "leak", icon: <DropIcon size={22} />, tint: "bg-[#0a84ff]/10 text-[#0a6fd6]" },
+    { id: "window", icon: <WindowIcon size={22} />, tint: "bg-[#ff9500]/12 text-[#c96f00]" },
+    { id: "motion", icon: <MotionIcon size={22} />, tint: "bg-[#34c759]/12 text-[#1d8a3a]" },
   ];
+  const blindsPct = fill(t.state.open, { n: rs.blinds });
 
   return (
-    <div className="container-wide grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_400px]">
-      <div className="min-w-0 space-y-4">
-        {/* Plan */}
-        <div className={`tile p-3 transition-colors duration-700 sm:p-5 ${state.night ? "bg-[#0b0b0d]" : "bg-cloud"}`}>
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex gap-2" role="radiogroup" aria-label={t.eyebrow}>
-              {(["apartment", "house"] as const).map((id) => {
-                const on = id === planId;
-                const Icon = id === "apartment" ? BuildingIcon : HouseIcon;
-                return (
+    <div className="container-wide space-y-4">
+      {/* Stage: the house and the phone */}
+      <div className="relative overflow-hidden rounded-[32px] bg-[#0b0b0d] bg-[radial-gradient(90%_70%_at_35%_40%,#1d1d22_0%,#0b0b0d_70%)] p-3 text-white sm:p-5 lg:p-7">
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-8">
+          <div className="flex min-w-0 flex-col">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex gap-2" role="radiogroup" aria-label={t.eyebrow}>
+                {(["apartment", "house"] as const).map((id) => {
+                  const on = id === planId;
+                  const Icon = id === "apartment" ? BuildingIcon : HouseIcon;
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      role="radio"
+                      aria-checked={on}
+                      onClick={() => choosePlan(id)}
+                      className={`flex items-center gap-2.5 rounded-[16px] px-3.5 py-2 text-left transition-colors sm:px-4 sm:py-2.5 ${
+                        on ? "bg-white text-ink" : "bg-white/[0.08] text-white/80 hover:bg-white/[0.14]"
+                      }`}
+                    >
+                      <Icon size={20} />
+                      <span className="leading-tight">
+                        <span className="block text-[14px] font-semibold sm:text-[15px]">{t.homes[id].title}</span>
+                        <span className={`hidden text-[12px] sm:block ${on ? "text-mute" : "text-white/55"}`}>{t.homes[id].text}</span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="flex rounded-full bg-white/[0.08] p-1" role="radiogroup" aria-label={`${t.day} / ${t.night}`}>
+                {([false, true] as const).map((night) => (
                   <button
-                    key={id}
+                    key={String(night)}
                     type="button"
                     role="radio"
-                    aria-checked={on}
-                    onClick={() => choosePlan(id)}
-                    className={`flex items-center gap-2.5 rounded-[16px] px-3.5 py-2 text-left transition-colors sm:px-4 sm:py-2.5 ${
-                      on ? (state.night ? "bg-white text-ink" : "bg-white text-ink shadow-sm ring-2 ring-accent") : state.night ? "bg-white/10 text-white/80 hover:bg-white/15" : "bg-white/60 text-ink-2 hover:bg-white"
-                    }`}
+                    aria-checked={state.night === night}
+                    onClick={() => setState((s) => ({ ...s, night }))}
+                    className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-medium transition-colors ${state.night === night ? "bg-white text-ink" : "text-white/70 hover:text-white"}`}
                   >
-                    <Icon size={20} />
-                    <span className="leading-tight">
-                      <span className="block text-[14px] font-semibold sm:text-[15px]">{t.homes[id].title}</span>
-                      <span className={`hidden text-[12px] sm:block ${on ? "text-mute" : "opacity-70"}`}>{t.homes[id].text}</span>
-                    </span>
+                    {night ? <MoonIcon size={15} /> : <SunIcon size={15} />}
+                    {night ? t.night : t.day}
                   </button>
-                );
-              })}
+                ))}
+              </div>
             </div>
-            <div className={`flex rounded-full p-1 ${state.night ? "bg-white/10" : "bg-white/70"}`} role="radiogroup" aria-label={`${t.day} / ${t.night}`}>
-              {([false, true] as const).map((night) => (
-                <button
-                  key={String(night)}
-                  type="button"
-                  role="radio"
-                  aria-checked={state.night === night}
-                  onClick={() => setState((s) => ({ ...s, night }))}
-                  className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-medium transition-colors ${
-                    state.night === night ? (night ? "bg-white text-ink" : "bg-ink text-white") : state.night ? "text-white/70" : "text-ink-2"
-                  }`}
-                >
-                  {night ? <MoonIcon size={15} /> : <SunIcon size={15} />}
-                  {night ? t.night : t.day}
-                </button>
-              ))}
+
+            <div className="relative mt-5 flex flex-1 flex-col justify-center sm:mt-6">
+              <div className="@container relative [perspective:2200px]" style={{ aspectRatio: `${W} / ${H}` }}>
+                <div className="absolute inset-0 origin-[50%_70%] md:[transform:rotateX(14deg)]">
+                  <div className="absolute inset-x-[6%] -bottom-[3%] h-[10%] rounded-[50%] bg-black/70 blur-2xl" aria-hidden="true" />
+                  <FloorPlan plan={plan} state={state} selected={room.id} onSelect={setSelected} onToggleLock={() => setState((s) => ({ ...s, locked: !s.locked }))} />
+                  {plan.rooms.map((r) => {
+                    const s = state.rooms[r.id]!;
+                    const on = r.id === room.id;
+                    const x = r.box.x + r.box.w / 2;
+                    const y = r.outdoor ? r.box.y + r.box.h - 22 : r.box.y + r.box.h / 2;
+                    return (
+                      <button
+                        key={r.id}
+                        type="button"
+                        onClick={() => setSelected(r.id)}
+                        aria-pressed={on}
+                        className={`absolute flex -translate-x-1/2 -translate-y-1/2 items-center gap-1 overflow-hidden rounded-full px-1.5 py-0.5 text-[9px] font-semibold leading-[1.15] backdrop-blur-md transition-colors @[300px]:text-[9.5px] @[400px]:px-2 @[400px]:text-[10.5px] @[560px]:px-3 @[560px]:py-1 @[560px]:text-[12.5px] ${
+                          on ? "bg-[#0a84ff] text-white shadow-[0_6px_20px_-4px_rgba(10,132,255,0.7)]" : "bg-black/60 text-white ring-1 ring-white/15 hover:bg-black/75"
+                        }`}
+                        style={{ left: `${(x / W) * 100}%`, top: `${(y / H) * 100}%`, maxWidth: `${(r.box.w / W) * 100 - 0.5}%` }}
+                      >
+                        <span className="min-w-0 text-center">{t.rooms[r.id]}</span>
+                        {r.heat && (
+                          <span className="hidden shrink-0 items-center gap-0.5 font-medium text-white/75 @[640px]:inline-flex">
+                            {s.heat && <span className="h-1.5 w-1.5 rounded-full bg-[#ff9500]" />}
+                            {deg(s.heat ? s.target : AMBIENT)}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {toast && (
+                <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex justify-center px-1 sm:-top-2" aria-live="polite">
+                  <div
+                    key={toast.id}
+                    role="status"
+                    className="demo-toast pointer-events-auto w-full max-w-[560px] rounded-[22px] bg-[#1c1c1e]/90 p-3 text-white shadow-[0_24px_60px_-12px_rgba(0,0,0,0.8)] ring-1 ring-white/10 backdrop-blur-xl sm:p-3.5"
+                  >
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-3">
+                      <div className="flex min-w-0 flex-[1_1_240px] items-center gap-3">
+                        <span className={`relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${toast.alert ? "bg-[#ff3b30]" : "bg-white/10"}`}>
+                          {toast.icon}
+                          {!toast.alert && <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-[#0a84ff] ring-2 ring-[#1c1c1e]" />}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className={`text-[14px] font-semibold leading-snug ${toast.alert ? "text-[#ff6961]" : ""}`}>{toast.title}</p>
+                          <p className="mt-0.5 text-[13px] leading-snug text-white/65">{toast.text}</p>
+                        </div>
+                        {toast.camera && <CameraFeed small label={t.state.live} />}
+                      </div>
+                      {toast.actions.length > 0 && (
+                        <div className="flex flex-[1_1_100%] gap-2 sm:flex-none">
+                          {toast.actions.map((a) => (
+                            <button
+                              key={a.label}
+                              type="button"
+                              onClick={a.run}
+                              className={`flex-1 rounded-full px-4 py-2 text-[13px] font-semibold transition-colors sm:flex-none ${a.primary ? "bg-[#0a84ff] text-white hover:bg-[#2491ff]" : "bg-white/10 text-white hover:bg-white/15"}`}
+                            >
+                              {a.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
+            <p className="mt-4 text-[13px] text-white/45">{t.hint}</p>
           </div>
 
-          <div className="@container relative mt-4" style={{ aspectRatio: `${W} / ${H}` }}>
-            <FloorPlan plan={plan} state={state} selected={room.id} onSelect={setSelected} onToggleLock={() => setState((s) => ({ ...s, locked: !s.locked }))} />
-            {plan.rooms.map((r) => {
-              const s = state.rooms[r.id]!;
-              const on = r.id === room.id;
-              const x = r.box.x + r.box.w / 2;
-              const y = r.outdoor ? r.box.y + r.box.h - 22 : r.box.y + 26;
-              return (
-                <button
-                  key={r.id}
-                  type="button"
-                  onClick={() => setSelected(r.id)}
-                  aria-pressed={on}
-                  className={`absolute flex -translate-x-1/2 -translate-y-1/2 items-center gap-1 overflow-hidden rounded-[10px] px-1 py-0.5 text-[9px] font-semibold leading-[1.15] shadow-sm backdrop-blur-md transition-colors @[300px]:text-[9.5px] @[400px]:px-1.5 @[400px]:text-[10.5px] @[560px]:rounded-[12px] @[560px]:px-2.5 @[560px]:py-1 @[560px]:text-[12px] ${
-                    on ? "bg-accent text-white" : state.night ? "bg-black/55 text-white ring-1 ring-white/10" : "bg-white/90 text-ink ring-1 ring-black/5"
-                  }`}
-                  style={{ left: `${(x / W) * 100}%`, top: `${(y / H) * 100}%`, maxWidth: `${(r.box.w / W) * 100 - 0.5}%` }}
-                >
-                  <span className="min-w-0 text-center">{t.rooms[r.id]}</span>
-                  {r.heat && (
-                    <span className={`hidden shrink-0 items-center gap-0.5 font-medium @[640px]:inline-flex ${on ? "text-white/85" : "opacity-70"}`}>
-                      {s.heat && <span className="h-1.5 w-1.5 rounded-full bg-[#ff9500]" />}
-                      {deg(s.heat ? s.target : AMBIENT)}
+          {/* Phone */}
+          <section className="mx-auto w-full max-w-[380px] self-center rounded-[44px] bg-[#2a2a2d] p-[5px] sm:rounded-[48px] sm:p-[7px] shadow-[0_40px_80px_-30px_rgba(0,0,0,0.9)] ring-1 ring-white/15" aria-labelledby="demo-room">
+            <div className="no-scrollbar flex flex-col overflow-y-auto rounded-[39px] bg-black px-3 pb-5 sm:rounded-[41px] sm:px-4 lg:h-[640px]">
+              <div className="sticky top-0 z-10 -mx-3 bg-black/85 px-3 pb-3 backdrop-blur-xl sm:-mx-4 sm:px-4">
+                <div className="flex items-center justify-between px-3 pt-3 text-[13px] font-semibold" aria-hidden="true">
+                  <span>9:41</span>
+                  <span className="h-[22px] w-[84px] rounded-full bg-[#1c1c1e]" />
+                  <span className="flex items-center gap-1">
+                    <span className="flex items-end gap-[2px]">
+                      {[4, 6, 8, 10].map((h) => (
+                        <span key={h} className="w-[3px] rounded-[1px] bg-white" style={{ height: h }} />
+                      ))}
                     </span>
-                  )}
-                </button>
-              );
-            })}
-
-            {toast && (
-              <div className="pointer-events-none absolute inset-x-2 top-2 flex justify-center sm:inset-x-3 sm:top-3" aria-live="polite">
-                <div
-                  key={toast.id}
-                  role="status"
-                  className="demo-toast pointer-events-auto w-full max-w-[400px] rounded-[22px] bg-white/90 p-3 text-ink shadow-[0_24px_60px_-20px_rgba(0,0,0,0.5)] ring-1 ring-black/5 backdrop-blur-xl sm:p-3.5"
-                >
-                  <div className="flex items-start gap-3">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-ink text-white">
-                      <LogoMark size={18} />
+                    <span className="ml-1 h-[11px] w-[22px] rounded-[3px] border border-white/50 p-[1.5px]">
+                      <span className="block h-full w-3/4 rounded-[1px] bg-white" />
                     </span>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex justify-between text-[11px] text-mute">
-                        <span>SmartHomeKJ</span>
-                        <span>{t.notify.now}</span>
-                      </div>
-                      <p className={`text-[14px] font-semibold leading-snug ${toast.alert ? "text-danger" : ""}`}>{toast.title}</p>
-                      <p className="mt-0.5 text-[13px] leading-snug text-ink-2">{toast.text}</p>
-                    </div>
-                    {toast.camera && <CameraFeed small label={t.state.live} />}
+                  </span>
+                </div>
+                <div className="mt-4 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 text-white/55">
+                    <LogoMark size={16} />
+                    <span className="text-[13px] font-medium">{t.selected}</span>
                   </div>
-                  {toast.actions.length > 0 && (
-                    <div className="mt-3 flex gap-2">
-                      {toast.actions.map((a) => (
+                  {room.heat && <span className="price text-[15px] font-semibold text-[#ff9f0a]">{deg(rs.heat ? rs.target : AMBIENT)}</span>}
+                </div>
+                <h2 id="demo-room" className="mt-1 text-[32px] font-bold leading-tight tracking-tight">
+                  {t.rooms[room.id]}
+                </h2>
+                <div className="no-scrollbar -mx-3 mt-3 flex gap-1.5 overflow-x-auto px-3 sm:-mx-4 sm:px-4" role="tablist" aria-label={t.roomsLabel}>
+                  {plan.rooms.map((r) => (
+                    <button
+                      key={r.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={r.id === room.id}
+                      onClick={() => setSelected(r.id)}
+                      className={`shrink-0 rounded-full px-3 py-1.5 text-[13px] font-medium transition-colors ${r.id === room.id ? "bg-white text-ink" : "bg-white/10 text-white/75 hover:bg-white/15"}`}
+                    >
+                      {t.rooms[r.id]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2.5">
+                <Device
+                  icon={<CategoryIcon category="lighting" size={19} />}
+                  tint="bg-[#ffcc00] text-black"
+                  title={t.devices.light}
+                  status={rs.light ? `${rs.level}%` : t.state.off}
+                  on={rs.light}
+                  onToggle={(v) => setRoom(room.id, { light: v })}
+                >
+                  <div className={`transition-opacity ${rs.light ? "" : "opacity-50"}`}>
+                    <Range label={t.state.brightness} value={rs.level} min={1} max={100} color={rs.light ? "#ffd60a" : "#8e8e93"} onChange={(level) => setRoom(room.id, { light: true, level })} />
+                  </div>
+                </Device>
+
+                {room.blinds && (
+                  <Device icon={<BlindsIcon size={19} />} tint="bg-[#64d2ff] text-black" title={t.devices.blinds} status={rs.blinds === 0 ? t.state.closed : blindsPct} on={rs.blinds > 0}>
+                    <div className="mt-3 h-1 overflow-hidden rounded-full bg-white/10" aria-hidden="true">
+                      <div className="h-full rounded-full bg-[#64d2ff] transition-[width] duration-100" style={{ width: `${rs.blinds}%` }} />
+                    </div>
+                    <div className="mt-3 grid grid-cols-3 gap-2">
+                      {(
+                        [
+                          { key: "up", label: t.controls.up, icon: <ChevronRight size={20} className="-rotate-90" />, run: () => moveBlinds(room.id, 1), on: moving?.id === room.id && moving.dir > 0 },
+                          { key: "stop", label: t.controls.stop, icon: <PauseIcon size={16} />, run: stopBlinds, on: false },
+                          { key: "down", label: t.controls.down, icon: <ChevronRight size={20} className="rotate-90" />, run: () => moveBlinds(room.id, -1), on: moving?.id === room.id && moving.dir < 0 },
+                        ] as const
+                      ).map((b) => (
                         <button
-                          key={a.label}
+                          key={b.key}
                           type="button"
-                          onClick={a.run}
-                          className={`flex-1 rounded-full px-3 py-2 text-[13px] font-semibold ${a.primary ? "bg-accent text-white" : "bg-black/5 text-ink"}`}
+                          aria-label={b.label}
+                          aria-pressed={b.key === "stop" ? undefined : b.on}
+                          onClick={b.run}
+                          className={`flex h-10 items-center justify-center rounded-[12px] transition-colors ${b.on ? "bg-[#64d2ff] text-black" : "bg-white/10 text-white hover:bg-white/15"}`}
                         >
-                          {a.label}
+                          {b.icon}
                         </button>
                       ))}
                     </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-          <p className={`mt-3 text-[13px] ${state.night ? "text-white/50" : "text-mute"}`}>{t.hint}</p>
-        </div>
+                  </Device>
+                )}
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          {/* Scenes */}
-          <section className="rounded-[24px] bg-white p-5 ring-1 ring-line sm:p-6" aria-labelledby="demo-scenes">
-            <h2 id="demo-scenes" className="text-[17px] font-semibold tracking-tight">
-              {t.scenesTitle}
-            </h2>
-            <div className="mt-4 grid grid-cols-5 gap-1.5">
-              {sceneButtons.map((b) => {
-                const on = scene?.id === b.id;
-                return (
-                  <button
-                    key={b.id}
-                    type="button"
-                    onClick={() => runScene(b.id)}
-                    aria-pressed={on}
-                    className={`flex flex-col items-center gap-1.5 rounded-[16px] px-1 py-2.5 text-center transition-colors ${on ? "bg-ink text-white" : "bg-cloud hover:bg-[#ebebef]"}`}
+                {room.heat && (
+                  <Device
+                    icon={<ThermoIcon size={19} />}
+                    tint="bg-[#ff9f0a] text-black"
+                    title={t.devices.heating}
+                    status={rs.heat ? fill(t.state.heatingTo, { t: deg(rs.target) }) : t.state.off}
+                    on={rs.heat}
+                    onToggle={(v) => setRoom(room.id, { heat: v })}
                   >
-                    <span className={`flex h-9 w-9 items-center justify-center rounded-full text-white ${b.tint}`}>{b.icon}</span>
-                    <span className="text-[11.5px] font-semibold leading-tight sm:text-[12px]">{t.scenes[b.id]}</span>
-                  </button>
-                );
-              })}
-            </div>
-            {scene ? (
-              <ol className="mt-4 space-y-1.5" aria-live="polite">
-                {scene.steps.slice(0, scene.done).map((text, i) => (
-                  <li key={`${scene.run}-${i}`} className="demo-step flex items-center gap-2 text-[14px] text-ink-2">
-                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#34c759] text-white">
-                      <CheckIcon size={13} strokeWidth={2.6} />
-                    </span>
-                    {text}
-                  </li>
-                ))}
-              </ol>
-            ) : (
-              <p className="mt-4 text-[14px] text-mute">{t.scenesHint}</p>
-            )}
-          </section>
+                    <div className="mt-2 flex items-center justify-between gap-3">
+                      <span className={`price text-[40px] font-semibold leading-none tracking-tight transition-opacity ${rs.heat ? "" : "opacity-40"}`}>{deg(rs.target)}</span>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          aria-label={t.state.cooler}
+                          onClick={() => setRoom(room.id, { target: Math.max(16, rs.target - 0.5) })}
+                          className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 transition-colors hover:bg-white/15"
+                        >
+                          <MinusIcon size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          aria-label={t.state.warmer}
+                          onClick={() => setRoom(room.id, { target: Math.min(28, rs.target + 0.5) })}
+                          className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 transition-colors hover:bg-white/15"
+                        >
+                          <PlusIcon size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  </Device>
+                )}
 
-          {/* Events */}
-          <section className="rounded-[24px] bg-white p-5 ring-1 ring-line sm:p-6" aria-labelledby="demo-events">
-            <h2 id="demo-events" className="text-[17px] font-semibold tracking-tight">
-              {t.eventsTitle}
-            </h2>
-            <div className="mt-4 grid grid-cols-2 gap-2">
-              {eventButtons.map((b) => (
-                <button
-                  key={b.id}
-                  type="button"
-                  onClick={() => trigger(b.id)}
-                  className="flex items-center gap-2.5 rounded-[16px] bg-cloud px-3 py-3 text-left text-[14px] font-semibold transition-colors hover:bg-[#ebebef]"
-                >
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-ink shadow-sm">{b.icon}</span>
-                  {t.events[b.id]}
-                </button>
-              ))}
+                {room.speaker && (
+                  <Device
+                    icon={<CategoryIcon category="entertainment" size={19} />}
+                    tint="bg-[#bf5af2] text-white"
+                    title={t.devices.music}
+                    status={rs.music ? `${t.state.playing} · ${t.state.tracks[track]}` : t.state.tracks[track]}
+                    on={rs.music}
+                    onToggle={(v) => setRoom(room.id, { music: v })}
+                  >
+                    <div className="mt-3 flex items-center justify-center gap-6">
+                      <button
+                        type="button"
+                        aria-label={t.controls.prev}
+                        onClick={() => setTrack((n) => (n + t.state.tracks.length - 1) % t.state.tracks.length)}
+                        className="flex h-10 w-10 items-center justify-center rounded-full text-white/85 transition-colors hover:bg-white/10"
+                      >
+                        <PrevIcon size={20} />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={rs.music ? t.controls.pause : t.controls.play}
+                        onClick={() => setRoom(room.id, { music: !rs.music })}
+                        className="flex h-12 w-12 items-center justify-center rounded-full bg-[#0a84ff] text-white transition-colors hover:bg-[#2491ff]"
+                      >
+                        {rs.music ? <PauseIcon size={18} /> : <PlayIcon size={18} className="translate-x-[1px]" />}
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={t.controls.next}
+                        onClick={() => setTrack((n) => (n + 1) % t.state.tracks.length)}
+                        className="flex h-10 w-10 items-center justify-center rounded-full text-white/85 transition-colors hover:bg-white/10"
+                      >
+                        <NextIcon size={20} />
+                      </button>
+                    </div>
+                    <div className="mt-1 flex items-center gap-3">
+                      <SpeakerIcon size={18} className="shrink-0 text-white/55" />
+                      <div className="flex-1">
+                        <Range label={t.state.volume} value={rs.volume} min={0} max={100} color="#ffffff" onChange={(volume) => setRoom(room.id, { volume })} />
+                      </div>
+                    </div>
+                  </Device>
+                )}
+
+                {room.cams && (
+                  <Device
+                    icon={<CameraIcon size={19} />}
+                    tint="bg-[#30d158] text-black"
+                    title={room.cams.length > 1 ? `${t.devices.camera} × ${room.cams.length}` : t.devices.camera}
+                    status={rs.cam ? t.state.watching : t.state.off}
+                    on={rs.cam}
+                    onToggle={(v) => setRoom(room.id, { cam: v })}
+                  >
+                    {rs.cam && (
+                      <div className="mt-3">
+                        <CameraFeed label={t.state.live} alert={state.alerts.motion && room.id === "hall"} />
+                      </div>
+                    )}
+                  </Device>
+                )}
+
+                {room.id === "hall" && (
+                  <Device
+                    icon={state.locked ? <LockIcon size={19} /> : <UnlockIcon size={19} />}
+                    tint={state.locked ? "bg-[#30d158] text-black" : "bg-[#ff9f0a] text-black"}
+                    title={t.devices.lock}
+                    status={state.locked ? t.state.locked : t.state.unlocked}
+                    on={state.locked}
+                    onToggle={(v) => setState((s) => ({ ...s, locked: v }))}
+                  />
+                )}
+
+                {room.sensors && room.sensors.length > 0 && (
+                  <div className="rounded-[20px] bg-white/[0.07] p-4">
+                    <p className="text-[13px] font-semibold text-white/55">{t.devices.sensors}</p>
+                    <ul className="mt-2 space-y-2">
+                      {room.sensors.map((sensor, i) => {
+                        const alarmed = sensorAlert(sensor.kind, room.id, state);
+                        return (
+                          <li key={i} className="flex items-center justify-between gap-3 text-[14px]">
+                            <span className="flex items-center gap-2">
+                              <span className="flex h-7 w-7 items-center justify-center rounded-full text-white" style={{ background: alarmed ? "#ff3b30" : sensorColor[sensor.kind] }}>
+                                {sensorIcon(sensor.kind)}
+                              </span>
+                              {t.sensors[sensor.kind]}
+                            </span>
+                            <span className={alarmed ? "font-semibold text-[#ff6961]" : "text-[#30d158]"}>
+                              {alarmed ? t.sensorState[sensor.kind === "window" ? "open" : sensor.kind === "leak" ? "leak" : "motion"] : t.sensorState.ok}
+                            </span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                )}
+              </div>
             </div>
           </section>
         </div>
       </div>
 
-      {/* Room panel and status */}
-      <div className="min-w-0 space-y-4 lg:sticky lg:top-16 lg:self-start">
-        <section className="rounded-[24px] bg-white p-5 ring-1 ring-line sm:p-6" aria-labelledby="demo-room">
-          <div className="no-scrollbar -mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1" role="tablist" aria-label={t.roomsLabel}>
-            {plan.rooms.map((r) => (
-              <button
-                key={r.id}
-                type="button"
-                role="tab"
-                aria-selected={r.id === room.id}
-                onClick={() => setSelected(r.id)}
-                className={`shrink-0 rounded-full px-3 py-1.5 text-[13px] font-medium transition-colors ${r.id === room.id ? "bg-ink text-white" : "bg-cloud text-ink-2 hover:bg-[#ebebef]"}`}
-              >
-                {t.rooms[r.id]}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        {/* Scenes */}
+        <section className="rounded-[28px] bg-white p-5 shadow-[0_10px_40px_-24px_rgba(0,0,0,0.25)] ring-1 ring-line sm:p-7" aria-labelledby="demo-scenes">
+          <h2 id="demo-scenes" className="text-[17px] font-semibold tracking-tight">
+            {t.scenesTitle}
+          </h2>
+          <div className="mt-5 grid grid-cols-5 gap-1">
+            {sceneButtons.map((b) => {
+              const on = scene?.id === b.id;
+              return (
+                <button key={b.id} type="button" onClick={() => runScene(b.id)} aria-pressed={on} className="group flex flex-col items-center gap-2 rounded-[16px] py-1 text-center">
+                  <span
+                    className={`flex h-11 w-11 items-center justify-center rounded-full text-white transition-transform duration-300 group-hover:scale-105 sm:h-14 sm:w-14 ${b.tint} ${on ? "ring-[3px] ring-ink ring-offset-2" : ""}`}
+                  >
+                    {b.icon}
+                  </span>
+                  <span className="text-[11.5px] font-semibold leading-tight sm:text-[13px]">{t.scenes[b.id]}</span>
+                </button>
+              );
+            })}
+          </div>
+          {scene ? (
+            <ol className="mt-5 space-y-1.5" aria-live="polite">
+              {scene.steps.slice(0, scene.done).map((text, i) => (
+                <li key={`${scene.run}-${i}`} className="demo-step flex items-center gap-2 text-[14px] text-ink-2">
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#34c759] text-white">
+                    <CheckIcon size={13} strokeWidth={2.6} />
+                  </span>
+                  {text}
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <p className="mt-5 text-[14px] text-mute">{t.scenesHint}</p>
+          )}
+        </section>
+
+        {/* Events */}
+        <section className="rounded-[28px] bg-white p-5 shadow-[0_10px_40px_-24px_rgba(0,0,0,0.25)] ring-1 ring-line sm:p-7" aria-labelledby="demo-events">
+          <h2 id="demo-events" className="text-[17px] font-semibold tracking-tight">
+            {t.eventsTitle}
+          </h2>
+          <div className="mt-5 grid grid-cols-4 gap-1">
+            {eventButtons.map((b) => (
+              <button key={b.id} type="button" onClick={() => trigger(b.id)} className="group flex flex-col items-center gap-2 rounded-[16px] py-1 text-center">
+                <span className={`flex h-11 w-11 items-center justify-center rounded-full transition-transform duration-300 group-hover:scale-105 sm:h-14 sm:w-14 ${b.tint}`}>{b.icon}</span>
+                <span className="text-[11.5px] font-semibold leading-tight sm:text-[13px]">{t.events[b.id]}</span>
               </button>
             ))}
           </div>
-
-          <div className="mt-5 flex items-end justify-between gap-3 border-b border-line pb-4">
-            <div>
-              <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-mute">{t.selected}</p>
-              <h2 id="demo-room" className="mt-1 text-[28px] font-semibold leading-none tracking-tight">
-                {t.rooms[room.id]}
-              </h2>
-            </div>
-            {room.heat && <span className="price text-[24px] font-semibold text-[#ff9500]">{deg(rs.heat ? rs.target : AMBIENT)}</span>}
-          </div>
-
-          <div className="mt-4 space-y-2.5">
-            <Device
-              icon={<CategoryIcon category="lighting" size={20} />}
-              tint="bg-[#ffcc00]"
-              title={t.devices.light}
-              status={rs.light ? `${rs.level}%` : t.state.off}
-              on={rs.light}
-              onToggle={(v) => setRoom(room.id, { light: v })}
-            >
-              {rs.light && (
-                <Range label={t.state.brightness} value={rs.level} min={1} max={100} color="#ffcc00" onChange={(level) => setRoom(room.id, { level })} />
-              )}
-            </Device>
-
-            {room.blinds && (
-              <Device
-                icon={<BlindsIcon size={20} />}
-                tint="bg-[#5ac8fa]"
-                title={t.devices.blinds}
-                status={rs.blinds === 0 ? t.state.closed : fill(t.state.open, { n: rs.blinds })}
-                on={rs.blinds > 0}
-                onToggle={(v) => setRoom(room.id, { blinds: v ? 100 : 0 })}
-              >
-                <Range label={t.state.position} value={rs.blinds} min={0} max={100} color="#5ac8fa" onChange={(blinds) => setRoom(room.id, { blinds })} />
-              </Device>
-            )}
-
-            {room.heat && (
-              <Device
-                icon={<ThermoIcon size={20} />}
-                tint="bg-[#ff9500]"
-                title={t.devices.heating}
-                status={rs.heat ? fill(t.state.heatingTo, { t: deg(rs.target) }) : t.state.off}
-                on={rs.heat}
-                onToggle={(v) => setRoom(room.id, { heat: v })}
-              >
-                {rs.heat && (
-                  <div className="mt-3 flex items-center justify-between rounded-[14px] bg-cloud p-1.5">
-                    <button
-                      type="button"
-                      aria-label={t.state.cooler}
-                      onClick={() => setRoom(room.id, { target: Math.max(16, rs.target - 0.5) })}
-                      className="flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-sm"
-                    >
-                      <MinusIcon size={16} />
-                    </button>
-                    <span className="price text-[20px] font-semibold">{deg(rs.target)}</span>
-                    <button
-                      type="button"
-                      aria-label={t.state.warmer}
-                      onClick={() => setRoom(room.id, { target: Math.min(28, rs.target + 0.5) })}
-                      className="flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-sm"
-                    >
-                      <PlusIcon size={16} />
-                    </button>
-                  </div>
-                )}
-              </Device>
-            )}
-
-            {room.speaker && (
-              <Device
-                icon={<CategoryIcon category="entertainment" size={20} />}
-                tint="bg-[#af52de]"
-                title={t.devices.music}
-                status={rs.music ? `${t.state.playing} · ${t.state.track}` : t.state.off}
-                on={rs.music}
-                onToggle={(v) => setRoom(room.id, { music: v })}
-              >
-                {rs.music && <Range label={t.state.volume} value={rs.volume} min={0} max={100} color="#af52de" onChange={(volume) => setRoom(room.id, { volume })} />}
-              </Device>
-            )}
-
-            {room.cams && (
-              <Device
-                icon={<CameraIcon size={20} />}
-                tint="bg-[#30b14c]"
-                title={room.cams.length > 1 ? `${t.devices.camera} × ${room.cams.length}` : t.devices.camera}
-                status={rs.cam ? t.state.watching : t.state.off}
-                on={rs.cam}
-                onToggle={(v) => setRoom(room.id, { cam: v })}
-              >
-                {rs.cam && (
-                  <div className="mt-3">
-                    <CameraFeed label={t.state.live} alert={state.alerts.motion && room.id === "hall"} />
-                  </div>
-                )}
-              </Device>
-            )}
-
-            {room.id === "hall" && (
-              <Device
-                icon={state.locked ? <LockIcon size={20} /> : <UnlockIcon size={20} />}
-                tint={state.locked ? "bg-[#30b14c]" : "bg-[#ff9500]"}
-                title={t.devices.lock}
-                status={state.locked ? t.state.locked : t.state.unlocked}
-                on={state.locked}
-                onToggle={(v) => setState((s) => ({ ...s, locked: v }))}
-              />
-            )}
-
-            {room.sensors && room.sensors.length > 0 && (
-              <div className="rounded-[18px] bg-cloud p-4">
-                <p className="text-[13px] font-semibold text-mute">{t.devices.sensors}</p>
-                <ul className="mt-2 space-y-2">
-                  {room.sensors.map((sensor, i) => {
-                    const alarmed = sensorAlert(sensor.kind, room.id, state);
-                    return (
-                      <li key={i} className="flex items-center justify-between gap-3 text-[14px]">
-                        <span className="flex items-center gap-2">
-                          <span className="flex h-7 w-7 items-center justify-center rounded-full text-white" style={{ background: alarmed ? "#ff3b30" : sensorColor[sensor.kind] }}>
-                            {sensorIcon(sensor.kind)}
-                          </span>
-                          {t.sensors[sensor.kind]}
-                        </span>
-                        <span className={alarmed ? "font-semibold text-danger" : "text-success"}>
-                          {alarmed ? t.sensorState[sensor.kind === "window" ? "open" : sensor.kind === "leak" ? "leak" : "motion"] : t.sensorState.ok}
-                        </span>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            )}
-          </div>
         </section>
+      </div>
 
-        <section className="rounded-[24px] bg-white p-5 ring-1 ring-line sm:p-6" aria-labelledby="demo-status">
-          <div className="flex items-center justify-between gap-3">
-            <h2 id="demo-status" className="text-[17px] font-semibold tracking-tight">
-              {t.statusTitle}
-            </h2>
-            <div className="flex rounded-full bg-cloud p-1" role="radiogroup" aria-label={t.alarm}>
-              {(["off", "home", "away"] as const).map((mode) => (
-                <button
-                  key={mode}
-                  type="button"
-                  role="radio"
-                  aria-checked={state.alarm === mode}
-                  onClick={() => setState((s) => ({ ...s, alarm: mode }))}
-                  className={`rounded-full px-2.5 py-1 text-[12px] font-semibold transition-colors ${state.alarm === mode ? (mode === "off" ? "bg-white text-ink shadow-sm" : "bg-[#ff3b30] text-white") : "text-mute"}`}
-                >
-                  {t.alarmModes[mode]}
-                </button>
-              ))}
-            </div>
-          </div>
-          <p className="mt-1 text-[12px] text-mute">{t.alarm}</p>
-          <dl className="mt-4 space-y-2.5 text-[15px]">
-            {[
-              [t.stats.lights, `${roomsOf((r, s) => s.light)} / ${plan.rooms.length}`],
-              [t.stats.heating, `${roomsOf((r, s) => !!r.heat && s.heat)} / ${indoor.filter((r) => r.heat).length}`],
-              [t.stats.cameras, String(camCount)],
-              [t.stats.sensors, String(sensorCount)],
-              [t.stats.door, state.locked ? t.state.locked : t.state.unlocked],
-              [t.stats.power, power],
-            ].map(([label, value]) => (
-              <div key={label} className="flex justify-between gap-4">
-                <dt className="text-mute">{label}</dt>
-                <dd className={`price font-semibold ${value === t.state.unlocked ? "text-[#c25e00]" : ""}`}>{value}</dd>
-              </div>
+      {/* The home right now */}
+      <section className="grid grid-cols-1 gap-6 rounded-[28px] bg-white p-5 shadow-[0_10px_40px_-24px_rgba(0,0,0,0.25)] ring-1 ring-line sm:p-7 lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:items-center lg:gap-10" aria-labelledby="demo-status">
+        <div>
+          <h2 id="demo-status" className="text-[17px] font-semibold tracking-tight">
+            {t.statusTitle}
+          </h2>
+          <p className="mt-3 text-[12px] font-medium text-mute">{t.alarm}</p>
+          <div className="mt-1.5 inline-flex rounded-full bg-cloud p-1" role="radiogroup" aria-label={t.alarm}>
+            {(["off", "home", "away"] as const).map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                role="radio"
+                aria-checked={state.alarm === mode}
+                onClick={() => setState((s) => ({ ...s, alarm: mode }))}
+                className={`rounded-full px-3 py-1 text-[13px] font-semibold transition-colors ${state.alarm === mode ? (mode === "off" ? "bg-white text-ink shadow-sm" : "bg-[#ff3b30] text-white") : "text-mute"}`}
+              >
+                {t.alarmModes[mode]}
+              </button>
             ))}
-          </dl>
-          <Link href={calcHref} className="btn btn-primary mt-6 w-full">
+          </div>
+        </div>
+        <dl className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-3">
+          {[
+            [t.stats.lights, `${roomsOf((r, s) => s.light)} / ${plan.rooms.length}`],
+            [t.stats.heating, `${roomsOf((r, s) => !!r.heat && s.heat)} / ${indoor.filter((r) => r.heat).length}`],
+            [t.stats.cameras, String(camCount)],
+            [t.stats.sensors, String(sensorCount)],
+            [t.stats.door, state.locked ? t.state.locked : t.state.unlocked],
+            [t.stats.power, power],
+          ].map(([label, value]) => (
+            <div key={label} className="min-w-0">
+              <dt className="text-[13px] text-mute">{label}</dt>
+              <dd className={`price mt-0.5 text-[20px] font-semibold tracking-tight ${value === t.state.unlocked ? "text-[#c25e00]" : ""}`}>{value}</dd>
+            </div>
+          ))}
+        </dl>
+        <div className="lg:w-[260px]">
+          <Link href={calcHref} className="btn btn-primary w-full">
             {t.cta}
           </Link>
           <p className="mt-2 text-center text-[13px] text-mute">{t.ctaText}</p>
-        </section>
-      </div>
+        </div>
+      </section>
     </div>
   );
 }
 
-// ---------- Panel pieces ----------
+// ---------- Phone pieces ----------
 
 function Device({
   icon,
@@ -711,27 +809,29 @@ function Device({
   title: string;
   status: string;
   on: boolean;
-  onToggle: (v: boolean) => void;
+  onToggle?: (v: boolean) => void;
   children?: React.ReactNode;
 }) {
   return (
-    <div className={`rounded-[18px] p-4 ring-1 transition-colors ${on ? "bg-white ring-line" : "bg-cloud ring-transparent"}`}>
-      <div className="flex items-center gap-3">
-        <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors ${on ? `${tint} text-white` : "bg-white text-mute"}`}>{icon}</span>
+    <div className="rounded-[20px] bg-white/[0.07] p-3 sm:p-3.5">
+      <div className="flex items-center gap-2.5 sm:gap-3">
+        <span className={`flex h-8 w-8 shrink-0 sm:h-9 sm:w-9 items-center justify-center rounded-full transition-colors ${on ? tint : "bg-white/10 text-white/60"}`}>{icon}</span>
         <span className="min-w-0 flex-1 leading-tight">
-          <span className="block text-[15px] font-semibold">{title}</span>
-          <span className="block text-[13px] text-mute">{status}</span>
+          <span className="block text-[15px] font-semibold [overflow-wrap:anywhere]">{title}</span>
+          <span className="block text-[13px] text-white/55">{status}</span>
         </span>
-        <button
-          type="button"
-          role="switch"
-          aria-checked={on}
-          aria-label={title}
-          onClick={() => onToggle(!on)}
-          className={`relative h-[31px] w-[51px] shrink-0 rounded-full transition-colors duration-300 ${on ? "bg-[#34c759]" : "bg-[#d9d9de]"}`}
-        >
-          <span className={`absolute left-[2px] top-[2px] h-[27px] w-[27px] rounded-full bg-white shadow-[0_2px_6px_rgba(0,0,0,0.2)] transition-transform duration-300 ${on ? "translate-x-5" : ""}`} />
-        </button>
+        {onToggle && (
+          <button
+            type="button"
+            role="switch"
+            aria-checked={on}
+            aria-label={title}
+            onClick={() => onToggle(!on)}
+            className={`relative h-[31px] w-[51px] shrink-0 rounded-full transition-colors duration-300 ${on ? "bg-[#0a84ff]" : "bg-[#39393d]"}`}
+          >
+            <span className={`absolute left-[2px] top-[2px] h-[27px] w-[27px] rounded-full bg-white shadow-[0_2px_6px_rgba(0,0,0,0.3)] transition-transform duration-300 ${on ? "translate-x-5" : ""}`} />
+          </button>
+        )}
       </div>
       {children}
     </div>
@@ -750,7 +850,7 @@ function Range({ label, value, min, max, color, onChange }: { label: string; val
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
         className="demo-range"
-        style={{ "--v": `${pct}%`, "--fill": color } as React.CSSProperties}
+        style={{ "--v": `${pct}%`, "--fill": color, "--track": "rgba(255,255,255,0.12)" } as React.CSSProperties}
       />
     </label>
   );
@@ -766,13 +866,13 @@ function CameraFeed({ label, small, alert }: { label: string; small?: boolean; a
   }, []);
   return (
     <div
-      className={`relative overflow-hidden bg-[radial-gradient(120%_90%_at_70%_20%,#5d6b78_0%,#2b333b_55%,#14181c_100%)] ${small ? "h-14 w-20 shrink-0 rounded-[10px]" : "aspect-video rounded-[14px]"}`}
+      className={`relative overflow-hidden bg-[radial-gradient(120%_90%_at_70%_20%,#5d6b78_0%,#2b333b_55%,#14181c_100%)] ${small ? "h-12 w-[72px] shrink-0 rounded-[10px]" : "aspect-video rounded-[14px]"}`}
       aria-hidden="true"
     >
       <div className="absolute inset-x-[30%] bottom-0 top-[38%] rounded-t-full bg-black/35 blur-[1px]" />
       <div className="absolute left-[44%] top-[22%] h-[22%] w-[12%] rounded-full bg-black/35" />
       <span className={`absolute left-1.5 top-1.5 flex items-center gap-1 rounded-full bg-black/50 px-1.5 py-0.5 font-semibold text-white ${small ? "text-[8px]" : "text-[10px]"}`}>
-        <span className={`h-1.5 w-1.5 rounded-full ${alert ? "bg-[#ff3b30]" : "bg-[#ff3b30]"} animate-pulse`} />
+        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#ff3b30]" />
         {label}
       </span>
       {!small && <span className="price absolute bottom-1.5 right-2 text-[10px] text-white/80">{now}</span>}
@@ -799,6 +899,8 @@ function sensorAlert(kind: SensorKind, roomId: RoomId, s: HomeState) {
 
 // ---------- Floor plan drawing ----------
 
+const floorOf = (id: RoomId) => (id === "kitchen" || id === "bath" ? "tile" : id === "garage" ? "concrete" : "wood");
+
 function FloorPlan({
   plan,
   state,
@@ -814,11 +916,11 @@ function FloorPlan({
 }) {
   const night = state.night;
   const pal = night
-    ? { floor: "#1c1c1e", wall: "#55555a", furniture: "rgba(255,255,255,0.13)", furnitureLit: "rgba(70,40,0,0.22)", glass: "#2f6b93", blinds: "#5a5a5f", grass: "#0f1a11", tree: "#1b2c1e", path: "#1e1e20", device: "#636366" }
-    : { floor: "#ffffff", wall: "#1d1d1f", furniture: "rgba(0,0,0,0.13)", furnitureLit: "rgba(90,55,0,0.2)", glass: "#8fd3ff", blinds: "#8e8e93", grass: "#e6efe0", tree: "#d2e3c8", path: "#f2f2f4", device: "#c7c7cc" };
+    ? { wallTop: "#cfcac1", wallSide: "#5e5a54", glass: "#2f6b93", blinds: "#6b6760", grass: "#121c10", tree: "#1c2b19", treeLight: "#24361f", path: "#24221f", device: "#636366", stroke: "#0b0b0d" }
+    : { wallTop: "#f4f1eb", wallSide: "#9c968c", glass: "#9fdcff", blinds: "#8e8a83", grass: "#4c7a3d", tree: "#3b6630", treeLight: "#5b8f4a", path: "#b3ab9e", device: "#c7c7cc", stroke: "#0b0b0d" };
 
-  const shape = (s: Shape, i: number, stroke: string) => {
-    const common = { key: i, fill: "none", stroke, strokeWidth: 2.5 };
+  const shape = (s: Shape, i: number) => {
+    const common = { key: i, fill: s.c ?? "#ebe5db", stroke: "rgba(0,0,0,0.22)", strokeWidth: 1.5 };
     if (s.t === "rect") return <rect {...common} x={s.x} y={s.y} width={s.w} height={s.h} rx={s.r ?? 0} />;
     if (s.t === "circle") return <circle {...common} cx={s.x} cy={s.y} r={s.r} />;
     return <ellipse {...common} cx={s.x} cy={s.y} rx={s.rx} ry={s.ry} />;
@@ -833,24 +935,62 @@ function FloorPlan({
     return `M${at.x} ${at.y} L${a.x.toFixed(1)} ${a.y.toFixed(1)} A${len} ${len} 0 0 1 ${b.x.toFixed(1)} ${b.y.toFixed(1)} Z`;
   };
 
+  const walls = (stroke: string) => (
+    <>
+      {plan.rooms
+        .filter((r) => !r.outdoor)
+        .map((r) => (
+          <rect key={r.id} {...boxAttrs(r.box)} fill="none" stroke={stroke} strokeWidth="8" />
+        ))}
+      {plan.shells.map((b, i) => (
+        <rect key={i} {...boxAttrs(b)} fill="none" stroke={stroke} strokeWidth="14" />
+      ))}
+    </>
+  );
+
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="absolute inset-0 h-full w-full select-none" aria-hidden="true">
+    <svg viewBox={`0 0 ${W} ${H}`} className="absolute inset-0 h-full w-full select-none overflow-visible" aria-hidden="true">
       <defs>
-        <radialGradient id="shd-glow" cx="50%" cy="45%" r="72%">
-          <stop offset="0" stopColor="#fff3cf" />
-          <stop offset="0.45" stopColor="#ffd37c" stopOpacity="0.85" />
-          <stop offset="1" stopColor="#ffb547" stopOpacity="0.28" />
+        <pattern id="shd-wood" width="120" height="18" patternUnits="userSpaceOnUse">
+          <rect width="120" height="18" fill="#a9825e" />
+          <rect y="9" width="120" height="9" fill="#a37b57" />
+          <path d="M0 0h120M0 9h120M44 0v9M104 9v9" stroke="#86613f" strokeWidth="0.8" opacity="0.5" />
+        </pattern>
+        <pattern id="shd-tile" width="34" height="34" patternUnits="userSpaceOnUse">
+          <rect width="34" height="34" fill="#d9d4cc" />
+          <path d="M0 0h34M0 0v34" stroke="#b5aea3" strokeWidth="1.5" />
+        </pattern>
+        <pattern id="shd-concrete" width="60" height="60" patternUnits="userSpaceOnUse">
+          <rect width="60" height="60" fill="#8c8a86" />
+          <circle cx="12" cy="18" r="1.4" fill="#7a7874" />
+          <circle cx="40" cy="44" r="1.2" fill="#9a9894" />
+          <circle cx="48" cy="12" r="1" fill="#7a7874" />
+        </pattern>
+        <radialGradient id="shd-glow" cx="50%" cy="50%" r="70%">
+          <stop offset="0" stopColor="#ffe2a8" stopOpacity="0.7" />
+          <stop offset="0.55" stopColor="#ffbe5c" stopOpacity="0.35" />
+          <stop offset="1" stopColor="#ff9f43" stopOpacity="0.05" />
         </radialGradient>
+        <radialGradient id="shd-tree" cx="40%" cy="35%" r="70%">
+          <stop offset="0" stopColor={pal.treeLight} />
+          <stop offset="1" stopColor={pal.tree} />
+        </radialGradient>
+        <filter id="shd-shadow" x="-30%" y="-30%" width="160%" height="170%">
+          <feDropShadow dx="0" dy="5" stdDeviation="4" floodColor="#000" floodOpacity="0.45" />
+        </filter>
+        <filter id="shd-blur" x="-10%" y="-10%" width="120%" height="120%">
+          <feGaussianBlur stdDeviation="4" />
+        </filter>
         {plan.rooms.flatMap((r) =>
           (r.cams ?? []).map((c, i) => (
             <radialGradient key={`${r.id}-${i}`} id={`shd-cone-${r.id}-${i}`} gradientUnits="userSpaceOnUse" cx={c.at.x} cy={c.at.y} r="210">
-              <stop offset="0" stopColor="#30d158" stopOpacity="0.45" />
+              <stop offset="0" stopColor="#30d158" stopOpacity="0.5" />
               <stop offset="1" stopColor="#30d158" stopOpacity="0" />
             </radialGradient>
           )),
         )}
-        <mask id={`shd-walls-${plan.id}`} maskUnits="userSpaceOnUse" x="0" y="0" width={W} height={H}>
-          <rect width={W} height={H} fill="white" />
+        <mask id={`shd-walls-${plan.id}`} maskUnits="userSpaceOnUse" x="-20" y="-20" width={W + 40} height={H + 40}>
+          <rect x="-20" y="-20" width={W + 40} height={H + 40} fill="white" />
           {[...plan.doors, plan.entrance].map((d, i) => (
             <rect key={i} x={d.x} y={d.y} width={d.w} height={d.h} fill="black" />
           ))}
@@ -859,42 +999,51 @@ function FloorPlan({
 
       {plan.garden && (
         <g>
-          <rect x="0" y="0" width={W} height={H} rx="24" fill={pal.grass} style={{ transition: "fill .7s" }} />
-          <rect {...boxAttrs(plan.garden.path)} rx="10" fill={pal.path} />
+          <rect x="0" y="0" width={W} height={H} rx="28" fill={pal.grass} style={{ transition: "fill .7s" }} />
+          <rect {...boxAttrs(plan.garden.path)} rx="10" fill={pal.path} style={{ transition: "fill .7s" }} />
           {plan.garden.trees.map((tr, i) => (
-            <circle key={i} cx={tr.x} cy={tr.y} r={tr.r} fill={pal.tree} />
+            <circle key={i} cx={tr.x} cy={tr.y + 6} r={tr.r} fill="#000" opacity="0.35" filter="url(#shd-blur)" />
+          ))}
+          {plan.garden.trees.map((tr, i) => (
+            <circle key={i} cx={tr.x} cy={tr.y} r={tr.r} fill="url(#shd-tree)" />
           ))}
         </g>
       )}
 
+      {/* Shadow of the building */}
+      <g transform="translate(0 14)" opacity="0.6" filter="url(#shd-blur)">
+        {plan.shells.map((b, i) => (
+          <rect key={i} {...boxAttrs(b)} fill="#000" />
+        ))}
+      </g>
+
       {/* Rooms */}
       {plan.rooms.map((r) => {
         const s = state.rooms[r.id]!;
-        const level = s.light ? s.level / 100 : 0;
-        const glow = s.light ? (night ? 0.3 + 0.7 * level : 0.15 + 0.5 * level) : 0;
-        const shade = !night && r.blinds ? (1 - s.blinds / 100) * 0.12 : 0;
+        const lamp = s.light ? s.level / 100 : 0;
+        const hasWindow = plan.windows.some((w) => w.room === r.id);
+        const daylight = night ? 0 : hasWindow ? (r.blinds ? 0.3 + (0.7 * s.blinds) / 100 : 1) : 0.6;
+        const dark = r.outdoor ? 0 : 0.88 * (1 - Math.max(daylight * 0.92, lamp));
+        const glow = lamp * (night ? 1 : 0.5);
         const leak = r.id === "bath" && state.alerts.leak;
         return (
           <g key={r.id}>
-            {!r.outdoor && <rect {...boxAttrs(r.box)} fill={pal.floor} style={{ transition: "fill .7s" }} />}
-            <rect {...boxAttrs(r.box)} rx={r.outdoor ? 18 : 0} fill="url(#shd-glow)" opacity={r.outdoor ? glow * 0.7 : glow} style={{ transition: "opacity .6s" }} />
-            {shade > 0 && <rect {...boxAttrs(r.box)} fill="#000" opacity={shade} style={{ transition: "opacity .6s" }} />}
+            {!r.outdoor && <rect {...boxAttrs(r.box)} fill={`url(#shd-${floorOf(r.id)})`} />}
+            <g filter="url(#shd-shadow)">{r.furniture.map(shape)}</g>
+            <rect {...boxAttrs(r.box)} rx={r.outdoor ? 18 : 0} fill="#05060a" opacity={dark} style={{ transition: "opacity .6s" }} />
+            <rect {...boxAttrs(r.box)} rx={r.outdoor ? 18 : 0} fill="url(#shd-glow)" opacity={glow} style={{ transition: "opacity .6s" }} />
             {leak && <rect {...boxAttrs(r.box)} fill="#0a84ff" className="demo-flash" />}
-            {r.furniture.map((f, i) => shape(f, i, night && level > 0.35 ? pal.furnitureLit : pal.furniture))}
           </g>
         );
       })}
 
-      {/* Walls */}
-      <g mask={`url(#shd-walls-${plan.id})`} style={{ transition: "stroke .7s" }}>
-        {plan.rooms
-          .filter((r) => !r.outdoor)
-          .map((r) => (
-            <rect key={r.id} {...boxAttrs(r.box)} fill="none" stroke={pal.wall} strokeWidth="6" />
-          ))}
-        {plan.shells.map((b, i) => (
-          <rect key={i} {...boxAttrs(b)} fill="none" stroke={pal.wall} strokeWidth="12" />
-        ))}
+      {/* Walls, drawn with a little height */}
+      <g mask={`url(#shd-walls-${plan.id})`}>
+        <g transform="translate(0 6)">{walls("#000")}</g>
+        <g transform="translate(0 3)" style={{ transition: "stroke .7s" }}>
+          {walls(pal.wallSide)}
+        </g>
+        <g style={{ transition: "stroke .7s" }}>{walls(pal.wallTop)}</g>
       </g>
 
       {/* Windows with blinds */}
@@ -903,10 +1052,10 @@ function FloorPlan({
         const closed = def?.blinds ? 1 - state.rooms[w.room]!.blinds / 100 : 0;
         return (
           <g key={i}>
-            <line x1={w.x1} y1={w.y1} x2={w.x2} y2={w.y2} stroke={pal.floor} strokeWidth="13" />
-            <line x1={w.x1} y1={w.y1} x2={w.x2} y2={w.y2} stroke={pal.glass} strokeWidth="5" />
+            <line x1={w.x1} y1={w.y1} x2={w.x2} y2={w.y2} stroke={pal.wallTop} strokeWidth="14" />
+            <line x1={w.x1} y1={w.y1} x2={w.x2} y2={w.y2} stroke={pal.glass} strokeWidth="6" />
             {def?.blinds && (
-              <line x1={w.x1} y1={w.y1} x2={w.x2} y2={w.y2} stroke={pal.blinds} strokeWidth="11" strokeDasharray="3 2" opacity={closed} style={{ transition: "opacity .6s" }} />
+              <line x1={w.x1} y1={w.y1} x2={w.x2} y2={w.y2} stroke={pal.blinds} strokeWidth="12" strokeDasharray="3 2" opacity={closed} style={{ transition: "opacity .3s" }} />
             )}
           </g>
         );
@@ -919,7 +1068,7 @@ function FloorPlan({
           return (
             <g key={`${r.id}-cam-${i}`}>
               <path d={cone(c.at, c.angle)} fill={`url(#shd-cone-${r.id}-${i})`} opacity={on ? 1 : 0} style={{ transition: "opacity .5s" }} />
-              <circle cx={c.at.x} cy={c.at.y} r="8" fill={on ? "#30d158" : pal.device} stroke={pal.floor} strokeWidth="2.5" />
+              <circle cx={c.at.x} cy={c.at.y} r="9" fill={on ? "#30d158" : pal.device} stroke={pal.stroke} strokeWidth="2.5" />
             </g>
           );
         }),
@@ -934,7 +1083,7 @@ function FloorPlan({
           return (
             <g key={`${r.id}-s-${i}`}>
               {(alert || armed) && <circle cx={sn.at.x} cy={sn.at.y} r="6" fill="none" stroke={color} strokeWidth="2" className={alert ? "demo-ring demo-ring-fast" : "demo-ring"} />}
-              <circle cx={sn.at.x} cy={sn.at.y} r={alert ? 8 : 6} fill={color} stroke={pal.floor} strokeWidth="2" />
+              <circle cx={sn.at.x} cy={sn.at.y} r={alert ? 8 : 6} fill={color} stroke={pal.stroke} strokeWidth="2" />
             </g>
           );
         }),
@@ -952,15 +1101,15 @@ function FloorPlan({
                 [0, 0.8, 1.6].map((d) => (
                   <circle key={d} cx={at.x} cy={at.y} r="9" fill="none" stroke="#bf5af2" strokeWidth="2" className="demo-ring" style={{ animationDelay: `${d}s` }} />
                 ))}
-              <circle cx={at.x} cy={at.y} r="9" fill={on ? "#bf5af2" : pal.device} stroke={pal.floor} strokeWidth="2.5" />
+              <circle cx={at.x} cy={at.y} r="9" fill={on ? "#bf5af2" : pal.device} stroke={pal.stroke} strokeWidth="2.5" />
             </g>
           );
         })}
 
       {/* Doorbell */}
       <g>
-        {state.ringing && <circle cx={plan.doorbell.x} cy={plan.doorbell.y} r="8" fill="none" stroke="#0a84ff" strokeWidth="2.5" className="demo-ring demo-ring-fast" />}
-        <circle cx={plan.doorbell.x} cy={plan.doorbell.y} r="8" fill={state.ringing ? "#0a84ff" : pal.device} stroke={pal.floor} strokeWidth="2.5" />
+        {state.ringing && <circle cx={plan.doorbell.x} cy={plan.doorbell.y} r="8" fill="none" stroke={BLUE} strokeWidth="2.5" className="demo-ring demo-ring-fast" />}
+        <circle cx={plan.doorbell.x} cy={plan.doorbell.y} r="8" fill={state.ringing ? BLUE : pal.device} stroke={pal.stroke} strokeWidth="2.5" />
       </g>
 
       {/* Selection */}
@@ -969,13 +1118,13 @@ function FloorPlan({
         .map((r) => (
           <rect
             key={r.id}
-            x={r.box.x + 7}
-            y={r.box.y + 7}
-            width={r.box.w - 14}
-            height={r.box.h - 14}
-            rx="12"
-            fill="rgba(0,113,227,0.05)"
-            stroke="#0071e3"
+            x={r.box.x + 9}
+            y={r.box.y + 9}
+            width={r.box.w - 18}
+            height={r.box.h - 18}
+            rx="14"
+            fill="rgba(10,132,255,0.08)"
+            stroke={BLUE}
             strokeWidth="3.5"
             className="pointer-events-none"
           />
@@ -988,7 +1137,7 @@ function FloorPlan({
 
       {/* Front door lock */}
       <g className="cursor-pointer" onClick={onToggleLock}>
-        <circle cx={plan.lock.x} cy={plan.lock.y} r="14" fill={state.locked ? "#30d158" : "#ff9f0a"} stroke={pal.floor} strokeWidth="3" style={{ transition: "fill .3s" }} />
+        <circle cx={plan.lock.x} cy={plan.lock.y} r="14" fill={state.locked ? "#30d158" : "#ff9f0a"} stroke={pal.stroke} strokeWidth="3" style={{ transition: "fill .3s" }} />
         <rect x={plan.lock.x - 5} y={plan.lock.y - 1} width="10" height="8" rx="2" fill="#fff" />
         <path
           d={state.locked ? `M${plan.lock.x - 3} ${plan.lock.y - 1}v-3a3 3 0 0 1 6 0v3` : `M${plan.lock.x - 3} ${plan.lock.y - 1}v-3a3 3 0 0 1 5.6-1.5`}

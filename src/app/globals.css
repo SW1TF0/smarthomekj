@@ -313,7 +313,7 @@ body {
   width: 100%;
   height: 30px;
   border-radius: 10px;
-  background: linear-gradient(to right, var(--fill, #0071e3) var(--v, 50%), #e8e8ed var(--v, 50%));
+  background: linear-gradient(to right, var(--fill, #0071e3) var(--v, 50%), var(--track, #e8e8ed) var(--v, 50%));
   cursor: pointer;
 }
 .demo-range::-webkit-slider-thumb {

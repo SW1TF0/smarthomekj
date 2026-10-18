@@ -4,7 +4,8 @@ export type RoomId = "living" | "kitchen" | "bedroom" | "kids" | "bath" | "hall"
 export type Pt = { x: number; y: number };
 export type Box = { x: number; y: number; w: number; h: number };
 export type SensorKind = "leak" | "motion" | "window" | "smoke";
-export type Shape = ({ t: "rect"; r?: number } & Box) | { t: "circle"; x: number; y: number; r: number } | { t: "ellipse"; x: number; y: number; rx: number; ry: number };
+/** `c` is the fill colour of the piece of furniture. */
+export type Shape = (({ t: "rect"; r?: number } & Box) | { t: "circle"; x: number; y: number; r: number } | { t: "ellipse"; x: number; y: number; rx: number; ry: number }) & { c?: string };
 
 export type RoomDef = {
   id: RoomId;
@@ -56,9 +57,9 @@ export const apartment: Plan = {
       speaker: { x: 72, y: 72 },
       sensors: [{ kind: "motion", at: { x: 372, y: 68 } }],
       furniture: [
-        { t: "rect", x: 74, y: 270, w: 250, h: 62, r: 18 },
-        { t: "rect", x: 140, y: 182, w: 116, h: 52, r: 14 },
-        { t: "rect", x: 300, y: 120, w: 60, h: 60, r: 16 },
+        { t: "rect", x: 74, y: 270, w: 250, h: 62, r: 18, c: "#d8cfc2" },
+        { t: "rect", x: 140, y: 182, w: 116, h: 52, r: 14, c: "#8a6a4c" },
+        { t: "rect", x: 300, y: 120, w: 60, h: 60, r: 16, c: "#cdbfae" },
       ],
     },
     {
@@ -72,9 +73,9 @@ export const apartment: Plan = {
         { kind: "leak", at: { x: 560, y: 238 } },
       ],
       furniture: [
-        { t: "rect", x: 412, y: 52, w: 156, h: 34, r: 6 },
-        { t: "rect", x: 534, y: 52, w: 34, h: 120, r: 6 },
-        { t: "circle", x: 480, y: 190, r: 26 },
+        { t: "rect", x: 412, y: 52, w: 156, h: 34, r: 6, c: "#f2efe9" },
+        { t: "rect", x: 534, y: 52, w: 34, h: 120, r: 6, c: "#f2efe9" },
+        { t: "circle", x: 480, y: 190, r: 26, c: "#8a6a4c" },
       ],
     },
     {
@@ -83,7 +84,7 @@ export const apartment: Plan = {
       watts: 15,
       cams: [{ at: { x: 562, y: 280 }, angle: 105 }],
       sensors: [{ kind: "motion", at: { x: 420, y: 282 } }],
-      furniture: [{ t: "rect", x: 414, y: 524, w: 28, h: 62, r: 4 }],
+      furniture: [{ t: "rect", x: 414, y: 524, w: 28, h: 62, r: 4, c: "#8a6a4c" }],
     },
     {
       id: "bedroom",
@@ -93,12 +94,12 @@ export const apartment: Plan = {
       blinds: true,
       sensors: [{ kind: "window", at: { x: 940, y: 220 } }],
       furniture: [
-        { t: "rect", x: 700, y: 112, w: 180, h: 214, r: 18 },
-        { t: "rect", x: 714, y: 124, w: 72, h: 32, r: 10 },
-        { t: "rect", x: 794, y: 124, w: 72, h: 32, r: 10 },
-        { t: "rect", x: 666, y: 120, w: 26, h: 26, r: 7 },
-        { t: "rect", x: 888, y: 120, w: 26, h: 26, r: 7 },
-        { t: "rect", x: 594, y: 60, w: 34, h: 170, r: 4 },
+        { t: "rect", x: 700, y: 112, w: 180, h: 214, r: 18, c: "#efe9df" },
+        { t: "rect", x: 714, y: 124, w: 72, h: 32, r: 10, c: "#ffffff" },
+        { t: "rect", x: 794, y: 124, w: 72, h: 32, r: 10, c: "#ffffff" },
+        { t: "rect", x: 666, y: 120, w: 26, h: 26, r: 7, c: "#8a6a4c" },
+        { t: "rect", x: 888, y: 120, w: 26, h: 26, r: 7, c: "#8a6a4c" },
+        { t: "rect", x: 594, y: 60, w: 34, h: 170, r: 4, c: "#9b7b5c" },
       ],
     },
     {
@@ -108,10 +109,10 @@ export const apartment: Plan = {
       heat: true,
       blinds: true,
       furniture: [
-        { t: "rect", x: 66, y: 476, w: 184, h: 100, r: 14 },
-        { t: "rect", x: 76, y: 486, w: 36, h: 80, r: 9 },
-        { t: "rect", x: 286, y: 376, w: 98, h: 44, r: 6 },
-        { t: "circle", x: 334, y: 446, r: 15 },
+        { t: "rect", x: 66, y: 476, w: 184, h: 100, r: 14, c: "#c9d6e3" },
+        { t: "rect", x: 76, y: 486, w: 36, h: 80, r: 9, c: "#ffffff" },
+        { t: "rect", x: 286, y: 376, w: 98, h: 44, r: 6, c: "#8a6a4c" },
+        { t: "circle", x: 334, y: 446, r: 15, c: "#6d7f92" },
       ],
     },
     {
@@ -121,9 +122,9 @@ export const apartment: Plan = {
       heat: true,
       sensors: [{ kind: "leak", at: { x: 935, y: 578 } }],
       furniture: [
-        { t: "rect", x: 600, y: 508, w: 184, h: 76, r: 34 },
-        { t: "rect", x: 832, y: 414, w: 76, h: 42, r: 13 },
-        { t: "ellipse", x: 926, y: 500, rx: 17, ry: 23 },
+        { t: "rect", x: 600, y: 508, w: 184, h: 76, r: 34, c: "#fafafa" },
+        { t: "rect", x: 832, y: 414, w: 76, h: 42, r: 13, c: "#fafafa" },
+        { t: "ellipse", x: 926, y: 500, rx: 17, ry: 23, c: "#fafafa" },
       ],
     },
   ],
@@ -166,9 +167,9 @@ export const house: Plan = {
       speaker: { x: 90, y: 90 },
       sensors: [{ kind: "motion", at: { x: 336, y: 86 } }],
       furniture: [
-        { t: "rect", x: 92, y: 220, w: 210, h: 56, r: 16 },
-        { t: "rect", x: 142, y: 146, w: 100, h: 46, r: 12 },
-        { t: "rect", x: 286, y: 118, w: 50, h: 50, r: 14 },
+        { t: "rect", x: 92, y: 220, w: 210, h: 56, r: 16, c: "#d8cfc2" },
+        { t: "rect", x: 142, y: 146, w: 100, h: 46, r: 12, c: "#8a6a4c" },
+        { t: "rect", x: 286, y: 118, w: 50, h: 50, r: 14, c: "#cdbfae" },
       ],
     },
     {
@@ -182,8 +183,8 @@ export const house: Plan = {
         { kind: "leak", at: { x: 520, y: 280 } },
       ],
       furniture: [
-        { t: "rect", x: 372, y: 72, w: 156, h: 32, r: 6 },
-        { t: "rect", x: 400, y: 160, w: 100, h: 46, r: 10 },
+        { t: "rect", x: 372, y: 72, w: 156, h: 32, r: 6, c: "#f2efe9" },
+        { t: "rect", x: 400, y: 160, w: 100, h: 46, r: 10, c: "#8a6a4c" },
       ],
     },
     {
@@ -194,10 +195,10 @@ export const house: Plan = {
       blinds: true,
       sensors: [{ kind: "window", at: { x: 650, y: 82 } }],
       furniture: [
-        { t: "rect", x: 590, y: 104, w: 140, h: 164, r: 16 },
-        { t: "rect", x: 600, y: 114, w: 56, h: 26, r: 8 },
-        { t: "rect", x: 664, y: 114, w: 56, h: 26, r: 8 },
-        { t: "rect", x: 558, y: 110, w: 22, h: 22, r: 6 },
+        { t: "rect", x: 590, y: 104, w: 140, h: 164, r: 16, c: "#efe9df" },
+        { t: "rect", x: 600, y: 114, w: 56, h: 26, r: 8, c: "#ffffff" },
+        { t: "rect", x: 664, y: 114, w: 56, h: 26, r: 8, c: "#ffffff" },
+        { t: "rect", x: 558, y: 110, w: 22, h: 22, r: 6, c: "#8a6a4c" },
       ],
     },
     {
@@ -207,8 +208,8 @@ export const house: Plan = {
       heat: true,
       blinds: true,
       furniture: [
-        { t: "rect", x: 86, y: 318, w: 124, h: 40, r: 6 },
-        { t: "circle", x: 148, y: 386, r: 16 },
+        { t: "rect", x: 86, y: 318, w: 124, h: 40, r: 6, c: "#8a6a4c" },
+        { t: "circle", x: 148, y: 386, r: 16, c: "#4b4b4f" },
       ],
     },
     {
@@ -218,9 +219,9 @@ export const house: Plan = {
       heat: true,
       blinds: true,
       furniture: [
-        { t: "rect", x: 258, y: 360, w: 82, h: 124, r: 12 },
-        { t: "rect", x: 266, y: 368, w: 66, h: 22, r: 8 },
-        { t: "rect", x: 354, y: 316, w: 52, h: 36, r: 6 },
+        { t: "rect", x: 258, y: 360, w: 82, h: 124, r: 12, c: "#c9d6e3" },
+        { t: "rect", x: 266, y: 368, w: 66, h: 22, r: 8, c: "#ffffff" },
+        { t: "rect", x: 354, y: 316, w: 52, h: 36, r: 6, c: "#8a6a4c" },
       ],
     },
     {
@@ -229,7 +230,7 @@ export const house: Plan = {
       watts: 15,
       sensors: [{ kind: "motion", at: { x: 440, y: 322 } }],
       cams: [{ at: { x: 582, y: 322 }, angle: 125 }],
-      furniture: [{ t: "rect", x: 566, y: 448, w: 24, h: 44, r: 4 }],
+      furniture: [{ t: "rect", x: 566, y: 448, w: 24, h: 44, r: 4, c: "#8a6a4c" }],
     },
     {
       id: "bath",
@@ -238,9 +239,9 @@ export const house: Plan = {
       heat: true,
       sensors: [{ kind: "leak", at: { x: 740, y: 480 } }],
       furniture: [
-        { t: "rect", x: 618, y: 318, w: 124, h: 56, r: 26 },
-        { t: "rect", x: 620, y: 442, w: 52, h: 36, r: 10 },
-        { t: "ellipse", x: 722, y: 448, rx: 15, ry: 20 },
+        { t: "rect", x: 618, y: 318, w: 124, h: 56, r: 26, c: "#fafafa" },
+        { t: "rect", x: 620, y: 442, w: 52, h: 36, r: 10, c: "#fafafa" },
+        { t: "ellipse", x: 722, y: 448, rx: 15, ry: 20, c: "#fafafa" },
       ],
     },
     {
@@ -249,8 +250,8 @@ export const house: Plan = {
       watts: 30,
       cams: [{ at: { x: 928, y: 292 }, angle: 100 }],
       furniture: [
-        { t: "rect", x: 806, y: 86, w: 90, h: 176, r: 28 },
-        { t: "rect", x: 818, y: 124, w: 66, h: 30, r: 8 },
+        { t: "rect", x: 806, y: 86, w: 90, h: 176, r: 28, c: "#3b4c63" },
+        { t: "rect", x: 818, y: 124, w: 66, h: 30, r: 8, c: "#1d2733" },
       ],
     },
     {
