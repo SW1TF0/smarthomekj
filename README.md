@@ -24,8 +24,7 @@ What the free plan leaves out: card payments, AI chat answers and automatic emai
 
 ### 2. GitHub
 
-1. Repository **Settings → Secrets and variables → Actions → Variables → New repository variable**, one per value:
-   `FIREBASE_API_KEY`, `FIREBASE_AUTH_DOMAIN`, `FIREBASE_PROJECT_ID`, `FIREBASE_STORAGE_BUCKET`, `FIREBASE_MESSAGING_SENDER_ID`, `FIREBASE_APP_ID`.
+1. The Firebase web config for project `gift-529fb` is already in `.github/workflows/deploy.yml`. To use another project, add repository variables (**Settings → Secrets and variables → Actions → Variables**) named `FIREBASE_API_KEY`, `FIREBASE_AUTH_DOMAIN`, `FIREBASE_PROJECT_ID`, `FIREBASE_STORAGE_BUCKET`, `FIREBASE_MESSAGING_SENDER_ID`, `FIREBASE_APP_ID`; they override it.
 2. **Settings → Pages → Build and deployment → Source: GitHub Actions.**
 3. Every push to `main` publishes the site to https://sw1tf0.github.io/smarthomekj/ (tab **Actions** shows progress). To publish again without a change: **Actions → Deploy site to GitHub Pages → Run workflow**.
 
