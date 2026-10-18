@@ -1,11 +1,14 @@
+"use client";
+
 import Link from "next/link";
 import type { Locale } from "@/i18n/config";
 import type { Dictionary } from "@/i18n";
-import type { SiteSettings } from "@/lib/settings";
+import { useSettings } from "@/lib/store";
 import { CookieSettingsButton } from "./cookie-banner";
 import { LogoMark } from "./icons";
 
-export function SiteFooter({ locale, dict, settings }: { locale: Locale; dict: Dictionary; settings: SiteSettings }) {
+export function SiteFooter({ locale, dict }: { locale: Locale; dict: Dictionary }) {
+  const settings = useSettings();
   const l = (path: string) => `/${locale}${path}`;
   const columns = [
     {

@@ -1,4 +1,3 @@
-import "server-only";
 import type { Locale } from "../config";
 import bg from "./bg";
 import en from "./en";

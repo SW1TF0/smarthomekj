@@ -1,41 +1,60 @@
-import Link from "next/link";
-import { Badge, Card, PageHeader } from "@/components/admin/ui";
-import { requireAdmin } from "@/lib/auth";
-import { db } from "@/lib/db";
-import { formatDate, formatMoney } from "@/lib/money";
-import { cardPaymentsEnabled } from "@/lib/stripe";
+"use client";
 
-export default async function Dashboard() {
-  const admin = await requireAdmin();
+import Link from "next/link";
+import { useState } from "react";
+import { useAdmin } from "@/components/admin/admin-shell";
+import { Badge, Card, Loading, PageHeader } from "@/components/admin/ui";
+import { listAllProducts, listInquiries, listOrders, loadStarterData, toDate, useAdminData } from "@/lib/admin-store";
+import { formatDate, formatMoney } from "@/lib/money";
+
+export default function Dashboard() {
+  const admin = useAdmin();
+  const [seeding, setSeeding] = useState("");
+  const { data, error, reload } = useAdminData(() => Promise.all([listOrders(), listInquiries(), listAllProducts()]));
+  if (!data) return <Loading error={error} />;
+  const [orders, inquiries, products] = data;
+
   const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-  const [revenue, ordersMonth, openOrders, newInquiries, openChats, lowStock, recentOrders, recentInquiries] = await Promise.all([
-    db.order.aggregate({ _sum: { totalCents: true }, where: { createdAt: { gte: monthStart }, status: { notIn: ["CANCELLED", "REFUNDED"] } } }),
-    db.order.count({ where: { createdAt: { gte: monthStart } } }),
-    db.order.count({ where: { status: { in: ["PENDING", "PAID", "PROCESSING"] } } }),
-    db.inquiry.count({ where: { status: "NEW" } }),
-    db.chatConversation.count({ where: { mode: "HUMAN" } }),
-    db.product.findMany({ where: { active: true, stock: { lte: 5 } }, orderBy: { stock: "asc" }, take: 6 }),
-    db.order.findMany({ orderBy: { createdAt: "desc" }, take: 6 }),
-    db.inquiry.findMany({ orderBy: { createdAt: "desc" }, take: 5 }),
-  ]);
+  const thisMonth = orders.filter((o) => toDate(o.createdAt) >= monthStart);
+  const revenue = thisMonth.filter((o) => !["CANCELLED", "REFUNDED"].includes(o.status)).reduce((s, o) => s + o.totalCents, 0);
+  const lowStock = products.filter((p) => p.active && p.stock <= 5).sort((a, b) => a.stock - b.stock).slice(0, 6);
 
   const stats = [
-    { label: "Оборот този месец", value: formatMoney(revenue._sum.totalCents ?? 0), href: "/admin/orders" },
-    { label: "Поръчки този месец", value: ordersMonth, href: "/admin/orders" },
-    { label: "За обработка", value: openOrders, href: "/admin/orders?status=PAID" },
-    { label: "Нови запитвания", value: newInquiries, href: "/admin/inquiries?status=NEW" },
-    { label: "Чакат човек в чата", value: openChats, href: "/admin/chats" },
-  ];
-
-  const setup = [
-    { done: cardPaymentsEnabled(), text: "Плащания с карта (STRIPE_SECRET_KEY)" },
-    { done: !!process.env.ANTHROPIC_API_KEY, text: "AI отговори в чата (ANTHROPIC_API_KEY)" },
-    { done: !!process.env.SMTP_HOST, text: "Имейли към клиенти (SMTP_HOST)" },
+    { label: "Оборот този месец", value: formatMoney(revenue), href: "/admin/orders/" },
+    { label: "Поръчки този месец", value: thisMonth.length, href: "/admin/orders/" },
+    { label: "Чакат потвърждение", value: orders.filter((o) => o.status === "PENDING").length, href: "/admin/orders/" },
+    { label: "Нови запитвания", value: inquiries.filter((i) => i.status === "NEW").length, href: "/admin/inquiries/" },
+    { label: "Продукти в магазина", value: products.filter((p) => p.active).length, href: "/admin/products/" },
   ];
 
   return (
     <>
       <PageHeader title={`Здравейте, ${admin.name.split(" ")[0]}`} subtitle="Какво се случва в SmartHomeKJ днес." />
+
+      {products.length === 0 && (
+        <Card className="mb-6 bg-blue-50 ring-blue-100">
+          <h2 className="font-semibold">Заредете началните продукти</h2>
+          <p className="mt-1 text-[14px] text-ink-2">Магазинът показва примерния каталог. Заредете го в базата, за да редактирате цени, наличности и въпроси.</p>
+          <button
+            className="btn btn-primary btn-sm mt-4"
+            disabled={seeding === "busy"}
+            onClick={async () => {
+              setSeeding("busy");
+              try {
+                await loadStarterData();
+                setSeeding("");
+                reload();
+              } catch (e) {
+                setSeeding((e as Error).message);
+              }
+            }}
+          >
+            {seeding === "busy" ? "Зареждане…" : "Зареди продуктите и въпросите"}
+          </button>
+          {seeding && seeding !== "busy" && <p className="mt-2 text-[13px] text-danger">{seeding}</p>}
+        </Card>
+      )}
+
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         {stats.map((s) => (
           <Link key={s.label} href={s.href}>
@@ -51,12 +70,12 @@ export default async function Dashboard() {
         <Card className="xl:col-span-2">
           <h2 className="mb-4 font-semibold">Последни поръчки</h2>
           <ul className="divide-y divide-line">
-            {recentOrders.map((o) => (
+            {orders.slice(0, 6).map((o) => (
               <li key={o.id}>
-                <Link href={`/admin/orders/${o.id}`} className="flex items-center justify-between gap-3 py-3 text-[14px] hover:bg-cloud/50">
+                <Link href={`/admin/orders/view/?id=${o.id}`} className="flex items-center justify-between gap-3 py-3 text-[14px] hover:bg-cloud/50">
                   <span>
                     <span className="font-medium">{o.number}</span> · {o.name}
-                    <span className="block text-[12px] text-mute">{formatDate(o.createdAt)}</span>
+                    <span className="block text-[12px] text-mute">{formatDate(toDate(o.createdAt))}</span>
                   </span>
                   <span className="flex items-center gap-3">
                     <Badge value={o.status} />
@@ -65,7 +84,7 @@ export default async function Dashboard() {
                 </Link>
               </li>
             ))}
-            {!recentOrders.length && <li className="py-3 text-[14px] text-mute">Все още няма поръчки.</li>}
+            {!orders.length && <li className="py-3 text-[14px] text-mute">Все още няма поръчки.</li>}
           </ul>
         </Card>
 
@@ -74,8 +93,8 @@ export default async function Dashboard() {
             <h2 className="mb-3 font-semibold">Ниска наличност</h2>
             <ul className="space-y-2 text-[14px]">
               {lowStock.map((p) => (
-                <li key={p.id} className="flex justify-between">
-                  <Link href={`/admin/products/${p.id}`} className="text-link">
+                <li key={p.slug} className="flex justify-between">
+                  <Link href={`/admin/products/edit/?id=${p.slug}`} className="text-link">
                     {p.sku}
                   </Link>
                   <span className={p.stock === 0 ? "text-danger" : "text-amber-600"}>{p.stock} бр.</span>
@@ -87,26 +106,22 @@ export default async function Dashboard() {
           <Card>
             <h2 className="mb-3 font-semibold">Нови запитвания</h2>
             <ul className="space-y-2 text-[14px]">
-              {recentInquiries.map((i) => (
+              {inquiries.slice(0, 5).map((i) => (
                 <li key={i.id} className="flex justify-between gap-2">
-                  <Link href="/admin/inquiries" className="truncate text-link">
+                  <Link href="/admin/inquiries/" className="truncate text-link">
                     {i.name}
                   </Link>
                   <Badge value={i.status} />
                 </li>
               ))}
-              {!recentInquiries.length && <li className="text-mute">Няма запитвания.</li>}
+              {!inquiries.length && <li className="text-mute">Няма запитвания.</li>}
             </ul>
           </Card>
           <Card>
-            <h2 className="mb-3 font-semibold">Настройка</h2>
-            <ul className="space-y-2 text-[13px]">
-              {setup.map((s) => (
-                <li key={s.text} className={s.done ? "text-success" : "text-amber-700"}>
-                  {s.done ? "✓" : "○"} {s.text}
-                </li>
-              ))}
-            </ul>
+            <h2 className="mb-2 font-semibold">Безплатният план</h2>
+            <p className="text-[13px] text-mute">
+              Плащане с наложен платеж или банков превод. Имейли до клиентите се пращат с бутона „Пиши на клиента“ в поръчката. Чатът отговаря от „Въпроси и отговори“.
+            </p>
           </Card>
         </div>
       </div>

@@ -1,15 +1,17 @@
-import { AdminForm } from "@/components/admin/admin-form";
-import { Card, PageHeader, inputCls, labelCls } from "@/components/admin/ui";
-import { requireAdmin } from "@/lib/auth";
-import { getSettings, type SiteSettings } from "@/lib/settings";
-import { updateSettings } from "../actions";
+"use client";
 
-type FieldDef = { key: keyof SiteSettings; label: string; type?: "money" | "bool" | "textarea" };
+import { AdminForm, euroToCents, str } from "@/components/admin/admin-form";
+import { useAdmin } from "@/components/admin/admin-shell";
+import { Card, Empty, Loading, PageHeader, inputCls, labelCls } from "@/components/admin/ui";
+import { getAdminSettings, saveSettings, useAdminData } from "@/lib/admin-store";
+import { defaultSettings, type SiteSettings } from "@/lib/settings";
+
+type FieldDef = { key: keyof SiteSettings; label: string; type?: "money" | "bool" };
 
 const groups: { title: string; hint?: string; fields: FieldDef[] }[] = [
   {
     title: "Данни за фирмата",
-    hint: "Показват се в долната част на сайта, в Общите условия, Политиката за поверителност и в имейлите. Задължителни по Закона за електронната търговия.",
+    hint: "Показват се в долната част на сайта, в Общите условия, Политиката за поверителност и в потвърждението на поръчката. Задължителни по Закона за електронната търговия.",
     fields: [
       { key: "companyName", label: "Търговско име" },
       { key: "legalName", label: "Регистрирано наименование (напр. СмартХоум КЖ ЕООД)" },
@@ -24,7 +26,7 @@ const groups: { title: string; hint?: string; fields: FieldDef[] }[] = [
       { key: "workingHours", label: "Работно време" },
       { key: "dpoEmail", label: "Имейл за лични данни" },
       { key: "bankName", label: "Банка" },
-      { key: "bankIban", label: "IBAN" },
+      { key: "bankIban", label: "IBAN (показва се след поръчка с банков превод)" },
       { key: "instagram", label: "Instagram URL" },
       { key: "facebook", label: "Facebook URL" },
     ],
@@ -40,24 +42,36 @@ const groups: { title: string; hint?: string; fields: FieldDef[] }[] = [
   },
   {
     title: "Чат за поддръжка",
-    hint: "С ANTHROPIC_API_KEY ботът отговаря с изкуствен интелект. Без ключ отговаря от „Въпроси и отговори“.",
+    hint: "Ботът отговаря от „Въпроси и отговори“. Когато не знае отговора, дава вашия имейл и телефон или предлага човек от екипа.",
     fields: [
       { key: "chatEnabled", label: "Показвай чата на сайта", type: "bool" },
-      { key: "chatAiEnabled", label: "AI отговори (ако има ключ)", type: "bool" },
       { key: "chatBotName", label: "Име на бота" },
-      { key: "chatExtraInstructions", label: "Допълнителни инструкции към бота (напр. промоции, срокове)", type: "textarea" },
     ],
   },
 ];
 
-export default async function SettingsPage() {
-  await requireAdmin("ADMIN");
-  const s = await getSettings();
+function read(f: FormData): SiteSettings {
+  const values = { ...defaultSettings } as Record<string, unknown>;
+  for (const [key, def] of Object.entries(defaultSettings)) {
+    if (typeof def === "boolean") values[key] = f.get(key) === "on";
+    else if (typeof def === "number") {
+      const cents = euroToCents(str(f, key) || "0");
+      values[key] = Number.isFinite(cents) ? cents : def;
+    } else values[key] = str(f, key);
+  }
+  return values as SiteSettings;
+}
+
+export default function SettingsPage() {
+  const admin = useAdmin();
+  const { data: s, error } = useAdminData(getAdminSettings);
+  if (admin.role !== "ADMIN") return <Empty text="Само администратор може да променя настройките." />;
+  if (!s) return <Loading error={error} />;
 
   return (
     <>
       <PageHeader title="Настройки" subtitle="Полетата в [скоби] са примерни и трябва да се попълнят преди пускане." />
-      <AdminForm action={updateSettings} className="space-y-6">
+      <AdminForm className="space-y-6" successText="Запазено. Сайтът показва новите данни веднага." onSubmit={(f) => saveSettings(read(f))}>
         {groups.map((g) => (
           <Card key={g.title}>
             <h2 className="font-semibold">{g.title}</h2>
@@ -72,19 +86,19 @@ export default async function SettingsPage() {
                     </label>
                   );
                 }
-                const placeholder = typeof value === "string" && value.startsWith("[");
+                const placeholder = typeof value === "string" && value.includes("[");
                 return (
-                  <div key={f.key} className={f.type === "textarea" ? "md:col-span-2" : ""}>
-                    <label className={labelCls}>{f.label}</label>
-                    {f.type === "textarea" ? (
-                      <textarea name={f.key} rows={4} defaultValue={String(value)} className={inputCls} />
-                    ) : (
-                      <input
-                        name={f.key}
-                        defaultValue={f.type === "money" ? (Number(value) / 100).toFixed(2) : String(value)}
-                        className={`${inputCls} ${placeholder ? "border-amber-400 bg-amber-50" : ""}`}
-                      />
-                    )}
+                  <div key={f.key}>
+                    <label className={labelCls} htmlFor={f.key}>
+                      {f.label}
+                    </label>
+                    <input
+                      id={f.key}
+                      name={f.key}
+                      inputMode={f.type === "money" ? "decimal" : undefined}
+                      defaultValue={f.type === "money" ? (Number(value) / 100).toFixed(2) : String(value)}
+                      className={`${inputCls} ${placeholder ? "border-amber-400 bg-amber-50" : ""}`}
+                    />
                   </div>
                 );
               })}

@@ -1,21 +1,16 @@
 import type { NextConfig } from "next";
 
-const securityHeaders = [
-  { key: "X-Content-Type-Options", value: "nosniff" },
-  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-  { key: "X-Frame-Options", value: "SAMEORIGIN" },
-  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), interest-cohort=()" },
-  { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
-];
+// The site is a static export for GitHub Pages. For a project site the address is
+// https://<user>.github.io/<repo>/, so NEXT_PUBLIC_BASE_PATH is "/<repo>" (set by the deploy workflow).
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
 const nextConfig: NextConfig = {
+  output: "export",
+  basePath,
+  trailingSlash: true,
   poweredByHeader: false,
-  images: {
-    remotePatterns: [{ protocol: "https", hostname: "**" }],
-  },
-  async headers() {
-    return [{ source: "/:path*", headers: securityHeaders }];
-  },
+  images: { unoptimized: true },
+  experimental: { globalNotFound: true },
 };
 
 export default nextConfig;

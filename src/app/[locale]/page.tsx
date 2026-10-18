@@ -1,12 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { HomeShowcase } from "@/components/home-showcase";
-import { ProductCard } from "@/components/product-card";
+import { FeaturedProducts } from "@/components/product-lists";
 import { CategoryWidget } from "@/components/category-widget";
 import { Reveal } from "@/components/reveal";
 import { isLocale } from "@/i18n/config";
 import { getDictionary } from "@/i18n";
-import { getProducts } from "@/lib/products";
 
 const sceneStyles = [
   { bg: "bg-[#ff9f0a] text-white", icon: "M12 3v2M5.6 5.6l1.4 1.4M3 12h2M19 12h2M17 7l1.4-1.4M7 16a5 5 0 1 1 10 0M3 20h18" },
@@ -20,7 +19,6 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
   if (!isLocale(locale)) notFound();
   const dict = getDictionary(locale);
   const h = dict.home;
-  const featured = (await getProducts(locale, { featured: true })).slice(0, 3);
   const [titleLine1, titleLine2] = h.title.split("\n");
   const [introLine1, introLine2] = h.introTitle.split("\n");
   const tileLabels = Object.fromEntries(h.tiles.map((t) => [t.key, t.title]));
@@ -152,20 +150,13 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       </section>
 
       {/* Featured products */}
-      {featured.length > 0 && (
-        <section className="section">
+      <section className="section">
           <div className="container-wide">
             <Reveal className="text-center">
               <h2 className="headline-lg">{h.featuredTitle}</h2>
               <p className="lead mx-auto mt-4 max-w-[640px] text-mute">{h.featuredText}</p>
             </Reveal>
-            <div className="mt-14 grid gap-4 md:grid-cols-3">
-              {featured.map((p, i) => (
-                <Reveal key={p.id} delay={i * 80}>
-                  <ProductCard product={p} locale={locale} dict={dict} />
-                </Reveal>
-              ))}
-            </div>
+            <FeaturedProducts locale={locale} dict={dict} />
             <div className="mt-10 text-center">
               <Link href={`/${locale}/shop`} className="link-chevron text-[19px]">
                 {dict.common.shopNow}
@@ -173,7 +164,6 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
             </div>
           </div>
         </section>
-      )}
 
       {/* Ecosystem */}
       <section className="section bg-night text-white">

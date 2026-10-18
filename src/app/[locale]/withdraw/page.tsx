@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ActionForm, Field } from "@/components/action-form";
 import { resolveLocale, type LocaleParams } from "@/i18n/page";
-import { submitWithdrawal } from "@/lib/public-actions";
 
 export async function generateMetadata({ params }: LocaleParams): Promise<Metadata> {
   const { dict } = await resolveLocale(params);
@@ -10,9 +9,8 @@ export async function generateMetadata({ params }: LocaleParams): Promise<Metada
 }
 
 // Online withdrawal function required for distance contracts from 19 June 2026 (Directive (EU) 2023/2673).
-export default async function WithdrawPage({ params, searchParams }: LocaleParams & { searchParams: Promise<{ order?: string }> }) {
+export default async function WithdrawPage({ params }: LocaleParams) {
   const { locale, dict } = await resolveLocale(params);
-  const { order } = await searchParams;
   const w = dict.withdraw;
   return (
     <section className="pt-20 pb-28 md:pt-28">
@@ -26,7 +24,8 @@ export default async function WithdrawPage({ params, searchParams }: LocaleParam
         </p>
         <div className="mt-12">
           <ActionForm
-            action={submitWithdrawal}
+            kind="withdrawal"
+            receipt={{ title: w.title, print: w.print, receivedAt: w.receivedAt, fields: { orderNumber: w.orderNumber, name: w.name, email: w.email, items: w.items, reason: w.reason } }}
             locale={locale}
             submitLabel={w.confirm}
             sendingLabel={dict.common.sending}
@@ -35,7 +34,7 @@ export default async function WithdrawPage({ params, searchParams }: LocaleParam
             invalidText={dict.checkout.errors.invalid}
           >
             <div className="grid gap-5 sm:grid-cols-2">
-              <Field label={w.orderNumber} name="orderNumber" required defaultValue={order} />
+              <Field label={w.orderNumber} name="orderNumber" required queryParam="order" />
               <Field label={w.email} name="email" type="email" required autoComplete="email" />
             </div>
             <Field label={w.name} name="name" required autoComplete="name" />

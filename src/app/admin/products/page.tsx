@@ -1,37 +1,36 @@
+"use client";
+
 import Link from "next/link";
-import { Badge, Empty, PageHeader, Table, Td } from "@/components/admin/ui";
-import { requireAdmin } from "@/lib/auth";
-import { db } from "@/lib/db";
+import { Badge, Empty, Loading, PageHeader, Table, Td } from "@/components/admin/ui";
+import { listAllProducts, useAdminData } from "@/lib/admin-store";
 import { formatMoney } from "@/lib/money";
 import { localizeProduct } from "@/lib/products";
 
-export default async function ProductsPage({ searchParams }: { searchParams: Promise<{ saved?: string }> }) {
-  await requireAdmin();
-  const { saved } = await searchParams;
-  const products = await db.product.findMany({ orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] });
+export default function ProductsPage() {
+  const { data: products, error } = useAdminData(listAllProducts);
+  if (!products) return <Loading error={error} />;
 
   return (
     <>
       <PageHeader
         title="Продукти"
-        subtitle="Цени с ДДС в евро. Наличността намалява автоматично при поръчка."
+        subtitle="Цени с ДДС в евро. Наличността намалява, когато потвърдите поръчка."
         action={
-          <Link href="/admin/products/new" className="btn btn-primary btn-sm">
+          <Link href="/admin/products/edit/" className="btn btn-primary btn-sm">
             + Нов продукт
           </Link>
         }
       />
-      {saved && <p className="mb-4 rounded-2xl bg-green-50 p-3 text-[14px] text-green-800">Продуктът е запазен.</p>}
       {products.length === 0 ? (
-        <Empty text="Няма продукти." />
+        <Empty text="Няма продукти в базата. Заредете началните продукти от таблото." />
       ) : (
         <Table head={["Продукт", "SKU", "Категория", "Цена", "Наличност", "Статус"]}>
           {products.map((p) => {
             const v = localizeProduct(p, "bg");
             return (
-              <tr key={p.id} className="hover:bg-cloud/50">
+              <tr key={p.slug} className="hover:bg-cloud/50">
                 <Td>
-                  <Link href={`/admin/products/${p.id}`} className="font-medium text-link">
+                  <Link href={`/admin/products/edit/?id=${p.slug}`} className="font-medium text-link">
                     {v.name}
                   </Link>
                   {p.featured && <span className="ml-2 text-[11px] text-amber-600">★ на началната</span>}

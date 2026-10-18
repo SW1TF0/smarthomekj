@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { ActionForm, Field, SelectField } from "@/components/action-form";
 import { resolveLocale, type LocaleParams } from "@/i18n/page";
-import { submitPrivacyRequest } from "@/lib/public-actions";
 
 export async function generateMetadata({ params }: LocaleParams): Promise<Metadata> {
   const { dict } = await resolveLocale(params);
@@ -18,7 +17,7 @@ export default async function DataRequestPage({ params }: LocaleParams) {
         <p className="lead mt-4 text-mute">{d.subtitle}</p>
         <div className="mt-12">
           <ActionForm
-            action={submitPrivacyRequest}
+            kind="privacy"
             locale={locale}
             submitLabel={d.submit}
             sendingLabel={dict.common.sending}

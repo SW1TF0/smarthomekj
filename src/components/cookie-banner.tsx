@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { logConsent } from "@/lib/store";
 
 export const CONSENT_COOKIE = "shkj_consent";
 export const CONSENT_VERSION = "1";
@@ -76,11 +77,7 @@ export function CookieBanner({ labels, policyHref }: { labels: Labels; policyHre
     const consent: Consent = { ...choice, version: CONSENT_VERSION };
     const maxAge = 60 * 60 * 24 * 180;
     document.cookie = `${CONSENT_COOKIE}=${encodeURIComponent(JSON.stringify(consent))}; path=/; max-age=${maxAge}; samesite=lax`;
-    fetch("/api/consent", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ ...consent, visitorId: getVisitorId() }),
-    }).catch(() => {});
+    void logConsent({ ...consent, visitorId: getVisitorId() });
     setAnalytics(choice.analytics);
     setMarketing(choice.marketing);
     setVisible(false);

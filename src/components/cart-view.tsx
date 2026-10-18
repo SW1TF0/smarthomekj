@@ -3,7 +3,9 @@
 import Link from "next/link";
 import type { Locale } from "@/i18n/config";
 import { formatMoney, vatFromGross } from "@/lib/money";
-import { shippingFor, type ShippingRules } from "@/lib/shipping";
+import { productHref } from "@/lib/products";
+import { shippingFor } from "@/lib/shipping";
+import { useSettings } from "@/lib/store";
 import { useCart } from "./cart-provider";
 import { ProductVisual } from "./product-visual";
 
@@ -22,7 +24,9 @@ type Labels = {
   quantity: string;
 };
 
-export function CartView({ locale, labels, rules }: { locale: Locale; labels: Labels; rules: ShippingRules }) {
+export function CartView({ locale, labels }: { locale: Locale; labels: Labels }) {
+  const settings = useSettings();
+  const rules = { shippingCents: settings.shippingCents, freeShippingFromCents: settings.freeShippingFromCents };
   const { items, subtotalCents, setQuantity, remove, ready } = useCart();
   const shipping = shippingFor(subtotalCents, rules);
   const total = subtotalCents + shipping;
@@ -46,12 +50,12 @@ export function CartView({ locale, labels, rules }: { locale: Locale; labels: La
       <ul className="divide-y divide-line border-y border-line">
         {items.map((item) => (
           <li key={item.productId} className="flex gap-5 py-6">
-            <Link href={`/${locale}/shop/${item.slug}`} className="shrink-0">
+            <Link href={productHref(locale, item.slug)} className="shrink-0">
               <ProductVisual category={item.category} imageUrl={item.imageUrl} alt={item.name} size="sm" className="h-24 w-24 rounded-2xl md:h-32 md:w-32" />
             </Link>
             <div className="flex flex-1 flex-col justify-between gap-3 sm:flex-row">
               <div>
-                <Link href={`/${locale}/shop/${item.slug}`} className="text-[19px] font-semibold tracking-tight hover:underline">
+                <Link href={productHref(locale, item.slug)} className="text-[19px] font-semibold tracking-tight hover:underline">
                   {item.name}
                 </Link>
                 <div className="mt-3 flex items-center gap-3">
