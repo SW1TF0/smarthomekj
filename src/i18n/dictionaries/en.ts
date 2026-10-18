@@ -1,8 +1,17 @@
 const en = {
   meta: {
-    title: "SmartHomeKJ — Smart homes, beautifully simple",
+    title: "Smart Home Installation in Bulgaria | SmartHomeKJ",
     description:
-      "SmartHomeKJ designs, installs and supports smart homes in Bulgaria. Lighting, climate, security and energy that work together, quietly.",
+      "Turnkey smart homes: lighting, heating, cameras, blinds and smart locks you control from your phone. Design, installation and support. Free home visit.",
+    keywords: ["smart home", "smart home Bulgaria", "home automation", "smart lighting", "smart switches", "smart thermostat", "security cameras", "smart lock", "video doorbell", "smart blinds", "Shelly", "Aqara", "Philips Hue", "smart home installation", "smart home cost"],
+    pages: {
+      solutions: { title: "Smart home solutions: lighting, climate, security", description: "Smart lighting, smart thermostats, security cameras, smart locks, automatic blinds and energy monitoring. See what we can make smart in your home." },
+      shop: { title: "Smart home shop: Shelly, Aqara, Philips Hue", description: "Smart switches, sensors, cameras, locks, thermostats and Wi-Fi from Shelly, Aqara, Philips Hue, TP-Link and Sonos. Good prices and delivery across Bulgaria." },
+      faq: { title: "Smart home FAQ: cost, installation, warranty", description: "What a smart home costs, whether it works without internet or with iPhone, Android and Alexa, the warranty and how to pay. Short answers to common questions." },
+      about: { title: "About us: the smart home team", description: "SmartHomeKJ designs, installs and supports smart homes in Bulgaria. We make the smart home easy for everyone." },
+      contact: { title: "Free smart home consultation and home visit", description: "Ask for a free home visit or a quote for your smart home. We reply within one working day." },
+    },
+    product: "{tagline} Buy online with delivery across Bulgaria, or with installation by us.",
   },
   nav: {
     home: "Home",
@@ -361,8 +370,8 @@ const en = {
     receivedAt: "Received on",
   },
   demo: {
-    metaTitle: "Live demo",
-    metaDescription: "Try a smart home in your browser. Switch on lights, close the blinds, set the heating and run scenes.",
+    metaTitle: "Smart home demo: try it online",
+    metaDescription: "Try a smart home free in your browser: lights, blinds, heating, cameras, the door lock and scenes. Apartment or house, day or night.",
     eyebrow: "Live demo",
     title: "Try a smart home now.\nTap anything.",
     subtitle: "Pick a room, switch on the light, close the blinds or press a scene. This is how you will run your home from your phone.",
@@ -476,8 +485,8 @@ const en = {
     outroConsultation: "Book a free consultation",
   },
   calculator: {
-    metaTitle: "Price calculator",
-    metaDescription: "See what a smart home costs in 1\u00a0minute. Choose your home, rooms and systems. Shop prices, installation included.",
+    metaTitle: "Smart home cost calculator with installation",
+    metaDescription: "What does a smart home cost? Pick an apartment, house or office, the rooms and systems, and see the price with installation in 1\u00a0minute. Real prices incl. VAT.",
     eyebrow: "Price calculator",
     title: "What does a smart home cost?\nSee your price in 1\u00a0minute.",
     subtitle: "Pick your home, the rooms and what you want. The price updates instantly. No email, no sign-up.",

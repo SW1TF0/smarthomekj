@@ -2,9 +2,18 @@ import type { Dictionary } from "./en";
 
 const tr: Dictionary = {
   meta: {
-    title: "SmartHomeKJ — Akıllı evler, zarif bir sadelikte",
+    title: "Bulgaristan'da Akıllı Ev Kurulumu | SmartHomeKJ",
     description:
-      "SmartHomeKJ, Bulgaristan'da akıllı evler tasarlar, kurar ve destekler. Birlikte, sessizce çalışan aydınlatma, iklim, güvenlik ve enerji.",
+      "Anahtar teslim akıllı ev: telefondan yönetilen aydınlatma, ısıtma, kameralar, panjurlar ve akıllı kilitler. Proje, kurulum ve destek. Ücretsiz keşif.",
+    keywords: ["akıllı ev", "akıllı ev sistemleri", "ev otomasyonu", "akıllı ev Bulgaristan", "akıllı aydınlatma", "akıllı anahtar", "akıllı termostat", "güvenlik kamerası", "akıllı kilit", "görüntülü kapı zili", "akıllı panjur", "Shelly", "Aqara", "Philips Hue", "akıllı ev kurulumu", "akıllı ev fiyatı"],
+    pages: {
+      solutions: { title: "Akıllı ev çözümleri: aydınlatma, iklim, güvenlik", description: "Akıllı aydınlatma, akıllı termostat, güvenlik kameraları, akıllı kilit, otomatik panjurlar ve enerji takibi. Evinizde neyi akıllı yapabileceğimizi görün." },
+      shop: { title: "Akıllı ev mağazası: Shelly, Aqara, Philips Hue", description: "Shelly, Aqara, Philips Hue, TP-Link ve Sonos akıllı anahtar, sensör, kamera, kilit, termostat ve Wi-Fi. Uygun fiyatlar, Bulgaristan'ın her yerine teslimat." },
+      faq: { title: "Akıllı ev SSS: fiyat, kurulum, garanti", description: "Akıllı ev ne kadar tutar, internetsiz, iPhone, Android ve Alexa ile çalışır mı, garanti ve ödeme. Sık sorulan sorulara kısa yanıtlar." },
+      about: { title: "Hakkımızda: akıllı ev ekibi", description: "SmartHomeKJ, Bulgaristan'da akıllı evler tasarlar, kurar ve destekler. Akıllı evi herkes için kolaylaştırıyoruz." },
+      contact: { title: "Ücretsiz akıllı ev danışmanlığı ve keşif", description: "Akıllı eviniz için ücretsiz keşif veya teklif isteyin. Bir iş günü içinde yanıt veriyoruz." },
+    },
+    product: "{tagline} Bulgaristan'ın her yerine teslimatla çevrimiçi satın alın veya kurulumu bize bırakın.",
   },
   nav: {
     home: "Ana sayfa",
@@ -363,8 +372,8 @@ const tr: Dictionary = {
     receivedAt: "Alınma tarihi",
   },
   demo: {
-    metaTitle: "Canlı demo",
-    metaDescription: "Akıllı evi tarayıcınızda deneyin. Işıkları açın, panjurları indirin, ısıtmayı ayarlayın ve sahne başlatın.",
+    metaTitle: "Akıllı ev demosu: çevrimiçi deneyin",
+    metaDescription: "Akıllı evi tarayıcınızda ücretsiz deneyin: ışıklar, panjurlar, ısıtma, kameralar, kapı kilidi ve sahneler. Daire veya ev, gündüz veya gece.",
     eyebrow: "Canlı demo",
     title: "Akıllı evi şimdi deneyin.\nİstediğinize dokunun.",
     subtitle: "Bir oda seçin, ışığı açın, panjurları indirin veya bir sahneye basın. Evinizi telefondan tam böyle yöneteceksiniz.",
@@ -478,8 +487,8 @@ const tr: Dictionary = {
     outroConsultation: "Ücretsiz danışmanlık",
   },
   calculator: {
-    metaTitle: "Fiyat hesaplayıcı",
-    metaDescription: "Akıllı evin fiyatını 1\u00a0dakikada görün. Evinizi, odaları ve sistemleri seçin. Mağaza fiyatları, kurulum dahil.",
+    metaTitle: "Akıllı ev fiyat hesaplama, kurulum dahil",
+    metaDescription: "Akıllı ev ne kadar tutar? Daire, ev veya ofis, odaları ve sistemleri seçin, kurulum dahil fiyatı 1\u00a0dakikada görün. KDV dahil gerçek fiyatlar.",
     eyebrow: "Fiyat hesaplayıcı",
     title: "Akıllı ev ne kadar tutar?\nFiyatınızı 1\u00a0dakikada görün.",
     subtitle: "Evinizi, odaları ve ne istediğinizi seçin. Fiyat anında hesaplanır. E-posta yok, kayıt yok.",

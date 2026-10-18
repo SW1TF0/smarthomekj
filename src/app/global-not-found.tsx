@@ -3,7 +3,7 @@ import "./globals.css";
 
 const base = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
-export const metadata: Metadata = { title: "404 · SmartHomeKJ" };
+export const metadata: Metadata = { title: "404 · SmartHomeKJ", robots: { index: false } };
 
 export default function GlobalNotFound() {
   return (

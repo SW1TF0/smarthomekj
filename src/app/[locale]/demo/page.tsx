@@ -3,10 +3,11 @@ import Link from "next/link";
 import { SmartHomeDemo } from "@/components/demo/smart-home-demo";
 import { Reveal } from "@/components/reveal";
 import { resolveLocale, type LocaleParams } from "@/i18n/page";
+import { pageMetadata } from "@/lib/seo";
 
 export async function generateMetadata({ params }: LocaleParams): Promise<Metadata> {
-  const { dict } = await resolveLocale(params);
-  return { title: dict.demo.metaTitle, description: dict.demo.metaDescription };
+  const { locale, dict } = await resolveLocale(params);
+  return pageMetadata({ locale, path: "demo", title: dict.demo.metaTitle, description: dict.demo.metaDescription });
 }
 
 export default async function DemoPage({ params }: LocaleParams) {

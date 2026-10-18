@@ -3,10 +3,11 @@ import { Calculator } from "@/components/calculator";
 import { CheckIcon, MinusIcon } from "@/components/icons";
 import { Reveal } from "@/components/reveal";
 import { resolveLocale, type LocaleParams } from "@/i18n/page";
+import { pageMetadata } from "@/lib/seo";
 
 export async function generateMetadata({ params }: LocaleParams): Promise<Metadata> {
-  const { dict } = await resolveLocale(params);
-  return { title: dict.calculator.metaTitle, description: dict.calculator.metaDescription };
+  const { locale, dict } = await resolveLocale(params);
+  return pageMetadata({ locale, path: "calculator", title: dict.calculator.metaTitle, description: dict.calculator.metaDescription });
 }
 
 export default async function CalculatorPage({ params }: LocaleParams) {

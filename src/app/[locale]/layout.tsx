@@ -8,13 +8,12 @@ import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { htmlLang, isLocale, locales } from "@/i18n/config";
 import { getDictionary } from "@/i18n";
+import { basePath, pageMetadata, siteUrl } from "@/lib/seo";
 import { SettingsProvider } from "@/lib/store";
 import "../globals.css";
 
 const inter = Inter({ subsets: ["latin", "latin-ext", "cyrillic"], variable: "--font-inter", display: "swap" });
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
-const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
 export const dynamicParams = false;
 
@@ -26,15 +25,16 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   const { locale } = await params;
   if (!isLocale(locale)) return {};
   const dict = getDictionary(locale);
+  // Defaults for every page. Each indexed page adds its own canonical and hreflang links.
+  const defaults = pageMetadata({ locale, title: dict.meta.title, absoluteTitle: true });
   return {
     metadataBase: new URL(siteUrl),
     title: { default: dict.meta.title, template: `%s · SmartHomeKJ` },
-    description: dict.meta.description,
-    alternates: {
-      canonical: `/${locale}`,
-      languages: Object.fromEntries(locales.map((l) => [htmlLang[l], `/${l}`])),
-    },
-    openGraph: { title: dict.meta.title, description: dict.meta.description, siteName: "SmartHomeKJ", locale, type: "website" },
+    description: defaults.description,
+    keywords: defaults.keywords,
+    openGraph: defaults.openGraph,
+    twitter: defaults.twitter,
+    applicationName: "SmartHomeKJ",
     icons: { icon: `${basePath}/icon.svg` },
   };
 }

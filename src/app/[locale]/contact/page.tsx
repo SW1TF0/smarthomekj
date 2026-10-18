@@ -2,10 +2,11 @@ import type { Metadata } from "next";
 import { ActionForm, Field, LinkedText, SelectField } from "@/components/action-form";
 import { resolveLocale, type LocaleParams } from "@/i18n/page";
 import { ContactInfo } from "@/components/contact-info";
+import { pageMetadata } from "@/lib/seo";
 
 export async function generateMetadata({ params }: LocaleParams): Promise<Metadata> {
-  const { dict } = await resolveLocale(params);
-  return { title: dict.nav.contact, description: dict.contact.subtitle };
+  const { locale, dict } = await resolveLocale(params);
+  return pageMetadata({ locale, path: "contact", ...dict.meta.pages.contact });
 }
 
 export default async function ContactPage({ params }: LocaleParams) {
