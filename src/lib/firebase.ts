@@ -5,14 +5,14 @@ import { connectAuthEmulator, getAuth, type Auth } from "firebase/auth";
 import { connectFirestoreEmulator, getFirestore, type Firestore } from "firebase/firestore";
 
 // The web config is public by design; access is controlled by firestore.rules.
-// Values come from NEXT_PUBLIC_FIREBASE_* at build time (see .env.example and the deploy workflow).
+// NEXT_PUBLIC_FIREBASE_* env variables override the live project's values (e.g. for local testing).
 const config = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "AIzaSyAxy6lpPyxw0nMs5fXk83BCdaMof-vDVfw",
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "smarthomekj-ea651.firebaseapp.com",
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "smarthomekj-ea651",
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "smarthomekj-ea651.firebasestorage.app",
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "994311642135",
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "1:994311642135:web:8a94b97c9f75053837d052",
 };
 
 export const firebaseConfigured = Boolean(config.apiKey && config.projectId);
