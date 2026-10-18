@@ -37,7 +37,11 @@ export async function submitForm(kind: FormKind, form: FormData): Promise<FormSt
   if (String(form.get("website") ?? "")) return { ok: true };
   const raw = String(form.get("locale") ?? "");
   const locale: Locale = isLocale(raw) ? raw : "bg";
-  const parsed = schemas[kind].safeParse(Object.fromEntries(form));
+  const values = Object.fromEntries(form);
+  // The price calculator sends its estimate as the message and the visitor's own note separately.
+  const extra = String(form.get("extra") ?? "").trim();
+  if (kind === "inquiry" && extra) values.message = `${String(values.message ?? "")}\n\n${extra}`.slice(0, 4000);
+  const parsed = schemas[kind].safeParse(values);
   if (!parsed.success) return { ok: false, error: "invalid", fields: parsed.error.issues.map((i) => String(i.path[0])) };
   try {
     if (kind === "inquiry") {

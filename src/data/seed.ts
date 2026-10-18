@@ -470,6 +470,56 @@ export const products: SeedProduct[] = [
       specs: ["Wi-Fi 7, 5 Gbps'ye kadar", "370 m²'ye kadar kapsama", "Ünite başına 2 × 2.5 Gbps port", "Deco uygulamasıyla yönetim"],
     },
   },
+  {
+    slug: "shelly-2pm-gen3",
+    sku: "SH-S3SW-002P16EU",
+    category: "climate",
+    priceCents: 2390,
+    stock: 30,
+    bg: {
+      name: "Shelly 2PM Gen3",
+      tagline: "Прави щорите умни. Монтира се зад ключа им.",
+      description: "Малко реле зад ключа на щорите с мотор. Отваряйте и спускайте щорите от телефона, по график или по изгрев и залез.",
+      specs: ["Една щора или два отделни кръга", "Измерване на мощност", "Wi-Fi и Bluetooth", "Монтаж в конзола зад ключа"],
+    },
+    en: {
+      name: "Shelly 2PM Gen3",
+      tagline: "Makes your blinds smart. Fits behind their switch.",
+      description: "A tiny relay behind the switch of motorised blinds. Open and close them from your phone, on a schedule or at sunrise and sunset.",
+      specs: ["One blind or two separate circuits", "Power metering", "Wi-Fi and Bluetooth", "Fits in the wall box behind the switch"],
+    },
+    tr: {
+      name: "Shelly 2PM Gen3",
+      tagline: "Panjurlarınızı akıllı yapar. Anahtarın arkasına takılır.",
+      description: "Motorlu panjurların anahtarının arkasına takılan küçük röle. Panjurları telefondan, zamanlayıcıyla veya gün doğumu ve batımında açıp kapatın.",
+      specs: ["Bir panjur veya iki ayrı devre", "Güç ölçümü", "Wi-Fi ve Bluetooth", "Anahtarın arkasındaki kutuya sığar"],
+    },
+  },
+  {
+    slug: "shelly-plus-smoke",
+    sku: "SH-SNSN-0031Z",
+    category: "security",
+    priceCents: 4790,
+    stock: 20,
+    bg: {
+      name: "Shelly Plus Smoke",
+      tagline: "Датчик за дим, който звъни и вкъщи, и на телефона ви.",
+      description: "Засича дим рано, пуска силна сирена и ви праща известие, където и да сте. Работи на батерия, без кабели.",
+      specs: ["Оптичен датчик за дим", "Силна сирена", "Wi-Fi и Bluetooth, известие на телефона", "На батерия, монтаж на тавана"],
+    },
+    en: {
+      name: "Shelly Plus Smoke",
+      tagline: "A smoke alarm that rings at home and on your phone.",
+      description: "Detects smoke early, sounds a loud siren and notifies you wherever you are. Runs on a battery, no wiring.",
+      specs: ["Optical smoke sensor", "Loud siren", "Wi-Fi and Bluetooth, phone alerts", "Battery powered, ceiling mount"],
+    },
+    tr: {
+      name: "Shelly Plus Smoke",
+      tagline: "Hem evde hem telefonunuzda çalan duman dedektörü.",
+      description: "Dumanı erken algılar, yüksek sesli siren çalar ve nerede olursanız olun size bildirim gönderir. Pille çalışır, kablo gerekmez.",
+      specs: ["Optik duman sensörü", "Yüksek sesli siren", "Wi-Fi ve Bluetooth, telefon bildirimi", "Pilli, tavana montaj"],
+    },
+  },
 ];
 
 export type SeedFaq = { keywords: string; bg: [string, string]; en: [string, string]; tr: [string, string] };

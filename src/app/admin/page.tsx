@@ -1,15 +1,26 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAdmin } from "@/components/admin/admin-shell";
 import { Badge, Card, Loading, PageHeader } from "@/components/admin/ui";
 import { listAllProducts, listInquiries, listOrders, loadStarterData, toDate, useAdminData } from "@/lib/admin-store";
 import { formatDate, formatMoney } from "@/lib/money";
+import { starterProducts } from "@/lib/products";
+
+const DISMISS_KEY = "shkj_admin_hidden_starter";
 
 export default function Dashboard() {
   const admin = useAdmin();
   const [seeding, setSeeding] = useState("");
+  const [hidden, setHidden] = useState<string | null>("");
+  useEffect(() => {
+    try {
+      setHidden(localStorage.getItem(DISMISS_KEY));
+    } catch {
+      setHidden(null);
+    }
+  }, []);
   const { data, error, reload } = useAdminData(() => Promise.all([listOrders(), listInquiries(), listAllProducts()]));
   if (!data) return <Loading error={error} />;
   const [orders, inquiries, products] = data;
@@ -17,6 +28,9 @@ export default function Dashboard() {
   const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
   const thisMonth = orders.filter((o) => toDate(o.createdAt) >= monthStart);
   const revenue = thisMonth.filter((o) => !["CANCELLED", "REFUNDED"].includes(o.status)).reduce((s, o) => s + o.totalCents, 0);
+  // Products added to the starter catalogue after the shop was set up (e.g. for the price calculator).
+  const missing = products.length ? starterProducts.filter((p) => !products.some((x) => x.slug === p.slug)) : [];
+  const missingKey = missing.map((p) => p.slug).join(",");
   const lowStock = products.filter((p) => p.active && p.stock <= 5).sort((a, b) => a.stock - b.stock).slice(0, 6);
 
   const stats = [
@@ -51,6 +65,45 @@ export default function Dashboard() {
           >
             {seeding === "busy" ? "Зареждане…" : "Зареди продуктите и въпросите"}
           </button>
+          {seeding && seeding !== "busy" && <p className="mt-2 text-[13px] text-danger">{seeding}</p>}
+        </Card>
+      )}
+
+      {missing.length > 0 && hidden !== missingKey && (
+        <Card className="mb-6 bg-blue-50 ring-blue-100">
+          <h2 className="font-semibold">Нови продукти в началния каталог</h2>
+          <p className="mt-1 text-[14px] text-ink-2">
+            {missing.map((p) => p.translations.bg?.name ?? p.slug).join(", ")}. Калкулаторът на сайта ги използва. Добавете ги в магазина, за да ги продавате и да редактирате цената им.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              className="btn btn-primary btn-sm"
+              disabled={seeding === "busy"}
+              onClick={async () => {
+                setSeeding("busy");
+                try {
+                  await loadStarterData();
+                  setSeeding("");
+                  reload();
+                } catch (e) {
+                  setSeeding((e as Error).message);
+                }
+              }}
+            >
+              {seeding === "busy" ? "Зареждане…" : "Добави ги"}
+            </button>
+            <button
+              className="btn btn-sm text-ink-2 hover:bg-white"
+              onClick={() => {
+                try {
+                  localStorage.setItem(DISMISS_KEY, missingKey);
+                } catch {}
+                setHidden(missingKey);
+              }}
+            >
+              Не ми трябват
+            </button>
+          </div>
           {seeding && seeding !== "busy" && <p className="mt-2 text-[13px] text-danger">{seeding}</p>}
         </Card>
       )}
