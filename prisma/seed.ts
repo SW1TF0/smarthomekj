@@ -6,6 +6,7 @@ const db = new PrismaClient();
 
 async function main() {
   const email = (process.env.ADMIN_EMAIL || "admin@smarthomekj.bg").toLowerCase();
+  if (process.env.VERCEL && !process.env.ADMIN_PASSWORD) throw new Error("Set ADMIN_PASSWORD before deploying.");
   const password = process.env.ADMIN_PASSWORD || "ChangeMe123!";
   if (!(await db.adminUser.findUnique({ where: { email } }))) {
     await db.adminUser.create({ data: { email, name: "Администратор", role: "ADMIN", passwordHash: await bcrypt.hash(password, 12) } });

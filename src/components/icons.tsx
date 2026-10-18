@@ -23,15 +23,8 @@ function Svg({ size = 24, children, ...props }: IconProps) {
 
 export const LogoMark = ({ size = 22, ...p }: IconProps) => (
   <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true" {...p}>
-    <defs>
-      <linearGradient id="lg-logo" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stopColor="#0090f7" />
-        <stop offset="0.5" stopColor="#ba62fc" />
-        <stop offset="1" stopColor="#f2416b" />
-      </linearGradient>
-    </defs>
-    <path d="M16 3 3 13.5V29h9.5v-8h7v8H29V13.5L16 3Z" fill="url(#lg-logo)" />
-    <circle cx="16" cy="14.5" r="2.6" fill="#fff" />
+    <path d="M16 3 3 13.5V29h9.5v-8h7v8H29V13.5L16 3Z" fill="currentColor" />
+    <circle cx="16" cy="14.5" r="2.6" fill="#0a84ff" />
   </svg>
 );
 
