@@ -219,6 +219,26 @@ export const PauseIcon = (p: IconProps) => (
     <path d="M8 5v14M16 5v14" strokeWidth={3} />
   </Svg>
 );
+export const PrevIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M18 5.5v13L9 12l9-6.5Z" fill="currentColor" />
+    <path d="M6 5.5v13" strokeWidth={2.6} />
+  </Svg>
+);
+export const NextIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M6 5.5v13l9-6.5-9-6.5Z" fill="currentColor" />
+    <path d="M18 5.5v13" strokeWidth={2.6} />
+  </Svg>
+);
+export const NoteIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M9 18V5.5l11-2V16" />
+    <circle cx="6.5" cy="18" r="2.5" fill="currentColor" />
+    <circle cx="17.5" cy="16" r="2.5" fill="currentColor" />
+    <path d="M9 9.5l11-2" />
+  </Svg>
+);
 export const SpeakerIcon = (p: IconProps) => (
   <Svg {...p}>
     <path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4v-5Z" fill="currentColor" />

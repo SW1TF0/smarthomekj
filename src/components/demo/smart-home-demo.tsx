@@ -3,14 +3,48 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Dictionary } from "@/i18n";
 import type { Locale } from "@/i18n/config";
-import { BellIcon, CheckIcon, DropIcon, MotionIcon, PauseIcon, PlayIcon, SpeakerIcon, UnlockIcon, WindowIcon } from "../icons";
+import {
+  BellIcon,
+  BlindsIcon,
+  CheckIcon,
+  ChevronRight,
+  DropIcon,
+  FilmIcon,
+  MinusIcon,
+  MoonIcon,
+  MotionIcon,
+  NextIcon,
+  NoteIcon,
+  OfficeIcon,
+  PauseIcon,
+  PlayIcon,
+  PlusIcon,
+  PrevIcon,
+  SpeakerIcon,
+  SunIcon,
+  SunsetIcon,
+  ThermoIcon,
+  UnlockIcon,
+  WindowIcon,
+  categoryIcons,
+} from "../icons";
 
-// The demo is the Canva design itself (public/demo/*.webp). The words and everything that changes are drawn
-// on top of it as real text, positioned in the pixels of the 2x Canva export, so they line up 1:1 and stay sharp.
+// The demo follows the Canva design 1:1. The floor plan is the Canva picture (public/demo/*.webp); the phone, the
+// cards, the words and everything that changes are drawn on top of it in HTML, positioned in the pixels of the 2x
+// Canva export, so they line up exactly and stay sharp on any screen.
 
 type Labels = Dictionary["demo"];
 type RoomId = "living" | "kitchen" | "bedroom" | "kids" | "bath" | "hall";
-type RoomState = { light: boolean; level: number; blinds: number; heat: boolean; target: number; music: boolean; playing: boolean; volume: number };
+type RoomState = {
+  light: boolean;
+  level: number;
+  blinds: number;
+  heat: boolean;
+  target: number;
+  music: boolean;
+  playing: boolean;
+  volume: number;
+};
 type Alarm = "off" | "home" | "away";
 type HomeState = {
   rooms: Record<RoomId, RoomState>;
@@ -47,17 +81,53 @@ function units(s: Size) {
   const x = (n: number) => `${(n / s.w) * 100}%`;
   const y = (n: number) => `${(n / s.h) * 100}%`;
   const u = (n: number) => `${((n / s.w) * 100).toFixed(4)}cqw`;
-  const box = ([x0, y0, x1, y1]: Rect): React.CSSProperties => ({ left: x(x0), top: y(y0), width: x(x1 - x0), height: y(y1 - y0) });
+  const box = ([x0, y0, x1, y1]: Rect): React.CSSProperties => ({
+    left: x(x0),
+    top: y(y0),
+    width: x(x1 - x0),
+    height: y(y1 - y0),
+  });
   return { x, y, u, box };
 }
 const S = units(STAGE);
 
-const ROOMS: { id: RoomId; main: Rect; extra?: Rect[]; pill: { x: number; y: number; w: number }; speaker: { x: number; y: number } }[] = [
-  { id: "living", main: [204, 184, 951, 687], pill: { x: 508, y: 435, w: 126 }, speaker: { x: 880, y: 255 } },
-  { id: "kitchen", main: [980, 184, 1507, 587], pill: { x: 1219, y: 436, w: 172 }, speaker: { x: 1050, y: 520 } },
-  { id: "bedroom", main: [1540, 184, 2164, 687], pill: { x: 1879, y: 441, w: 200 }, speaker: { x: 1650, y: 600 } },
-  { id: "kids", main: [204, 707, 807, 1080], pill: { x: 539, y: 897, w: 190 }, speaker: { x: 735, y: 1010 } },
-  { id: "bath", main: [980, 753, 1400, 1080], pill: { x: 1178, y: 896, w: 144 }, speaker: { x: 1330, y: 1010 } },
+const ROOMS: {
+  id: RoomId;
+  main: Rect;
+  extra?: Rect[];
+  pill: { x: number; y: number; w: number };
+  speaker: { x: number; y: number };
+}[] = [
+  {
+    id: "living",
+    main: [204, 184, 951, 687],
+    pill: { x: 508, y: 435, w: 126 },
+    speaker: { x: 880, y: 255 },
+  },
+  {
+    id: "kitchen",
+    main: [980, 184, 1507, 587],
+    pill: { x: 1219, y: 436, w: 172 },
+    speaker: { x: 1050, y: 520 },
+  },
+  {
+    id: "bedroom",
+    main: [1540, 184, 2164, 687],
+    pill: { x: 1879, y: 441, w: 200 },
+    speaker: { x: 1650, y: 600 },
+  },
+  {
+    id: "kids",
+    main: [204, 707, 807, 1080],
+    pill: { x: 539, y: 897, w: 190 },
+    speaker: { x: 735, y: 1010 },
+  },
+  {
+    id: "bath",
+    main: [980, 753, 1400, 1080],
+    pill: { x: 1178, y: 896, w: 144 },
+    speaker: { x: 1330, y: 1010 },
+  },
   {
     id: "hall",
     main: [1400, 687, 2164, 1080],
@@ -71,16 +141,35 @@ const ROOMS: { id: RoomId; main: Rect; extra?: Rect[]; pill: { x: number; y: num
 ];
 
 /** Which part of the stage each layout shows. */
-const CROP: Record<"full" | "plan" | "phone", Rect> = { full: [0, 0, 3111, 1206], plan: [150, 130, 2215, 1135], phone: [2310, 20, 3090, 1190] };
+const CROP: Record<"full" | "plan" | "phone", Rect> = {
+  full: [0, 0, 3111, 1206],
+  plan: [180, 160, 2190, 1104],
+  phone: [2310, 20, 3090, 1190],
+};
 
 const fill = (template: string, values: Record<string, string | number>) => template.replace(/\{(\w+)\}/g, (_, k: string) => String(values[k] ?? ""));
 
 function initialState(): HomeState {
   const rooms = {} as HomeState["rooms"];
   for (const r of ROOMS) {
-    rooms[r.id] = { light: true, level: 70, blinds: 100, heat: true, target: r.id === "bath" ? 23 : 21.5, music: r.id === "living", playing: false, volume: 75 };
+    rooms[r.id] = {
+      light: true,
+      level: 70,
+      blinds: 100,
+      heat: true,
+      target: r.id === "bath" ? 23 : 21.5,
+      music: r.id === "living",
+      playing: false,
+      volume: 75,
+    };
   }
-  return { rooms, locked: true, alarm: "off", alerts: { leak: false, window: false, motion: false }, ringing: false };
+  return {
+    rooms,
+    locked: true,
+    alarm: "off",
+    alerts: { leak: false, window: false, motion: false },
+    ringing: false,
+  };
 }
 
 function patchRooms(s: HomeState, pick: (id: RoomId) => boolean, patch: Partial<RoomState>): HomeState {
@@ -92,12 +181,16 @@ function patchRooms(s: HomeState, pick: (id: RoomId) => boolean, patch: Partial<
 export function SmartHomeDemo({ locale, t }: { locale: Locale; t: Labels }) {
   const [state, setState] = useState<HomeState>(initialState);
   const [selected, setSelected] = useState<RoomId>("living");
-  const [scene, setScene] = useState<{ id: SceneId; run: number; done: number; steps: string[] } | null>(null);
+  const [scene, setScene] = useState<{
+    id: SceneId;
+    run: number;
+    done: number;
+    steps: string[];
+  } | null>(null);
   const [toast, setToast] = useState<Toast | null>(null);
   const [track, setTrack] = useState(0);
   const [moving, setMoving] = useState<{ id: RoomId; dir: 1 | -1 } | null>(null);
   const timers = useRef<number[]>([]);
-  const planScroller = useRef<HTMLDivElement>(null);
   const blindsTimer = useRef<number | null>(null);
 
   const stopBlinds = () => {
@@ -118,7 +211,16 @@ export function SmartHomeDemo({ locale, t }: { locale: Locale; t: Labels }) {
     stopBlinds();
     setMoving({ id, dir });
     blindsTimer.current = window.setInterval(() => {
-      setState((s) => ({ ...s, rooms: { ...s.rooms, [id]: { ...s.rooms[id], blinds: Math.min(100, Math.max(0, s.rooms[id].blinds + dir * 5)) } } }));
+      setState((s) => ({
+        ...s,
+        rooms: {
+          ...s.rooms,
+          [id]: {
+            ...s.rooms[id],
+            blinds: Math.min(100, Math.max(0, s.rooms[id].blinds + dir * 5)),
+          },
+        },
+      }));
     }, 90);
   }
   useEffect(() => {
@@ -127,59 +229,85 @@ export function SmartHomeDemo({ locale, t }: { locale: Locale; t: Labels }) {
     if (moving.dir > 0 ? b >= 100 : b <= 0) stopBlinds();
   }, [state, moving]);
 
-  // On phones the plan is wider than the screen: keep the chosen room in view.
-  useEffect(() => {
-    const el = planScroller.current;
-    if (!el || el.scrollWidth <= el.clientWidth) return;
-    const r = ROOMS.find((x) => x.id === selected)!;
-    const [x0, , x1] = CROP.plan;
-    const centre = ((r.main[0] + r.main[2]) / 2 - x0) / (x1 - x0);
-    el.scrollTo({ left: centre * el.scrollWidth - el.clientWidth / 2, behavior: "smooth" });
-  }, [selected]);
-
-  const temp = useMemo(() => new Intl.NumberFormat({ bg: "bg-BG", en: "en-IE", tr: "tr-TR" }[locale], { minimumFractionDigits: 1, maximumFractionDigits: 1 }), [locale]);
+  const temp = useMemo(
+    () =>
+      new Intl.NumberFormat({ bg: "bg-BG", en: "en-IE", tr: "tr-TR" }[locale], {
+        minimumFractionDigits: 1,
+        maximumFractionDigits: 1,
+      }),
+    [locale],
+  );
   const deg = useCallback((n: number) => `${temp.format(n)}°`, [temp]);
   const roomName = (id: RoomId) => t.rooms[id];
 
   const rs = state.rooms[selected];
-  const setRoom = (id: RoomId, patch: Partial<RoomState>) => setState((s) => ({ ...s, rooms: { ...s.rooms, [id]: { ...s.rooms[id], ...patch } } }));
+  const setRoom = (id: RoomId, patch: Partial<RoomState>) =>
+    setState((s) => ({
+      ...s,
+      rooms: { ...s.rooms, [id]: { ...s.rooms[id], ...patch } },
+    }));
 
   // ---------- Scenes ----------
 
   function sceneSteps(id: SceneId): { text: string; run: (s: HomeState) => HomeState }[] {
     const st = t.steps;
-    const light = (r: RoomId, n: number) => ({ text: fill(st.light, { room: roomName(r), n }), run: (s: HomeState) => patchRooms(s, (x) => x === r, { light: true, level: n }) });
-    const heatAll = (n: number) => ({ text: fill(st.heatAll, { t: deg(n) }), run: (s: HomeState) => patchRooms(s, () => true, { heat: true, target: n }) });
-    const allOff = { text: st.lightsOff, run: (s: HomeState) => patchRooms(s, () => true, { light: false }) };
-    const musicOff = { text: st.musicOff, run: (s: HomeState) => patchRooms(s, () => true, { playing: false }) };
-    const lock = { text: st.lock, run: (s: HomeState) => ({ ...s, locked: true }) };
+    const light = (r: RoomId, n: number) => ({
+      text: fill(st.light, { room: roomName(r), n }),
+      run: (s: HomeState) => patchRooms(s, (x) => x === r, { light: true, level: n }),
+    });
+    const heatAll = (n: number) => ({
+      text: fill(st.heatAll, { t: deg(n) }),
+      run: (s: HomeState) => patchRooms(s, () => true, { heat: true, target: n }),
+    });
+    const allOff = {
+      text: st.lightsOff,
+      run: (s: HomeState) => patchRooms(s, () => true, { light: false }),
+    };
+    const musicOff = {
+      text: st.musicOff,
+      run: (s: HomeState) => patchRooms(s, () => true, { playing: false }),
+    };
+    const lock = {
+      text: st.lock,
+      run: (s: HomeState) => ({ ...s, locked: true }),
+    };
     const blinds = (n: number) => (s: HomeState) => patchRooms(s, (x) => x !== "bath" && x !== "hall", { blinds: n });
 
     switch (id) {
       case "morning":
         return [
           { text: st.blindsOpen, run: blinds(100) },
-          { text: fill(st.heatRoom, { room: roomName("bath"), t: deg(24) }), run: (s) => patchRooms(s, (x) => x === "bath", { heat: true, target: 24 }) },
+          {
+            text: fill(st.heatRoom, { room: roomName("bath"), t: deg(24) }),
+            run: (s) => patchRooms(s, (x) => x === "bath", { heat: true, target: 24 }),
+          },
           light("kitchen", 90),
           { text: st.alarmOff, run: (s) => ({ ...s, alarm: "off" }) },
         ];
       case "away":
         return [allOff, musicOff, heatAll(18), lock, { text: st.alarmAway, run: (s) => ({ ...s, alarm: "away" }) }];
       case "evening":
-        return [
-          { text: st.blindsClose, run: blinds(0) },
-          light("living", 70),
-          light("kitchen", 50),
-          light("hall", 20),
-          heatAll(21.5),
-          { text: st.alarmOff, run: (s) => ({ ...s, alarm: "off" }) },
-        ];
+        return [{ text: st.blindsClose, run: blinds(0) }, light("living", 70), light("kitchen", 50), light("hall", 20), heatAll(21.5), { text: st.alarmOff, run: (s) => ({ ...s, alarm: "off" }) }];
       case "movie":
         return [
-          { text: fill(st.blindsRoom, { room: roomName("living") }), run: (s) => patchRooms(s, (x) => x === "living", { blinds: 0 }) },
-          { text: st.othersOff, run: (s) => patchRooms(s, (x) => x !== "living", { light: false }) },
+          {
+            text: fill(st.blindsRoom, { room: roomName("living") }),
+            run: (s) => patchRooms(s, (x) => x === "living", { blinds: 0 }),
+          },
+          {
+            text: st.othersOff,
+            run: (s) => patchRooms(s, (x) => x !== "living", { light: false }),
+          },
           light("living", 10),
-          { text: fill(st.musicOn, { room: roomName("living") }), run: (s) => patchRooms(s, (x) => x === "living", { music: true, playing: true, volume: 60 }) },
+          {
+            text: fill(st.musicOn, { room: roomName("living") }),
+            run: (s) =>
+              patchRooms(s, (x) => x === "living", {
+                music: true,
+                playing: true,
+                volume: 60,
+              }),
+          },
         ];
       case "night":
         return [allOff, light("hall", 5), { text: st.blindsClose, run: blinds(0) }, musicOff, heatAll(19), lock, { text: st.alarmHome, run: (s) => ({ ...s, alarm: "home" }) }];
@@ -189,7 +317,11 @@ export function SmartHomeDemo({ locale, t }: { locale: Locale; t: Labels }) {
   function runScene(id: SceneId) {
     clearTimers();
     setToast(null);
-    setState((s) => ({ ...s, alerts: { leak: false, window: false, motion: false }, ringing: false }));
+    setState((s) => ({
+      ...s,
+      alerts: { leak: false, window: false, motion: false },
+      ringing: false,
+    }));
     const steps = sceneSteps(id);
     const run = Date.now();
     setScene({ id, run, done: 0, steps: steps.map((s) => s.text) });
@@ -229,7 +361,15 @@ export function SmartHomeDemo({ locale, t }: { locale: Locale; t: Labels }) {
             primary: true,
             run: () => {
               setState((s) => ({ ...s, locked: false, ringing: false }));
-              show({ title: n.unlockedTitle, text: n.unlockedText, icon: <UnlockIcon size={18} />, actions: [] }, 3200);
+              show(
+                {
+                  title: n.unlockedTitle,
+                  text: n.unlockedText,
+                  icon: <UnlockIcon size={18} />,
+                  actions: [],
+                },
+                3200,
+              );
             },
           },
           { label: n.close, run: close },
@@ -256,7 +396,10 @@ export function SmartHomeDemo({ locale, t }: { locale: Locale; t: Labels }) {
       });
     } else if (id === "window") {
       setSelected("bedroom");
-      setState((s) => ({ ...patchRooms(s, (x) => x === "bedroom", { heat: false }), alerts: { ...s.alerts, window: true } }));
+      setState((s) => ({
+        ...patchRooms(s, (x) => x === "bedroom", { heat: false }),
+        alerts: { ...s.alerts, window: true },
+      }));
       show({
         title: fill(n.windowTitle, { room: roomName("bedroom") }),
         text: n.windowText,
@@ -266,7 +409,10 @@ export function SmartHomeDemo({ locale, t }: { locale: Locale; t: Labels }) {
             label: n.windowClose,
             primary: true,
             run: () => {
-              setState((s) => ({ ...patchRooms(s, (x) => x === "bedroom", { heat: true }), alerts: { ...s.alerts, window: false } }));
+              setState((s) => ({
+                ...patchRooms(s, (x) => x === "bedroom", { heat: true }),
+                alerts: { ...s.alerts, window: false },
+              }));
               close();
             },
           },
@@ -276,7 +422,12 @@ export function SmartHomeDemo({ locale, t }: { locale: Locale; t: Labels }) {
       setSelected("hall");
       const armed = state.alarm === "away";
       setState((s) =>
-        armed ? { ...s, alerts: { ...s.alerts, motion: true } } : { ...patchRooms(s, (x) => x === "hall", { light: true, level: 30 }), alerts: { ...s.alerts, motion: true } },
+        armed
+          ? { ...s, alerts: { ...s.alerts, motion: true } }
+          : {
+              ...patchRooms(s, (x) => x === "hall", { light: true, level: 30 }),
+              alerts: { ...s.alerts, motion: true },
+            },
       );
       later(5000, () => setState((s) => ({ ...s, alerts: { ...s.alerts, motion: false } })));
       show({
@@ -325,7 +476,11 @@ export function SmartHomeDemo({ locale, t }: { locale: Locale; t: Labels }) {
               aria-pressed={on}
               aria-label={roomName(r.id)}
               className="absolute transition-shadow duration-300 hover:bg-white/[0.04]"
-              style={{ ...S.box(r.main), borderRadius: S.u(10), boxShadow: on ? `inset 0 0 0 ${S.u(6)} ${BLUE}` : undefined }}
+              style={{
+                ...S.box(r.main),
+                borderRadius: S.u(10),
+                boxShadow: on ? `inset 0 0 0 ${S.u(6)} ${BLUE}` : undefined,
+              }}
             />
           );
         })}
@@ -337,7 +492,12 @@ export function SmartHomeDemo({ locale, t }: { locale: Locale; t: Labels }) {
               key={r.id}
               aria-hidden="true"
               className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2"
-              style={{ left: S.x(r.speaker.x), top: S.y(r.speaker.y), width: `max(20px, ${S.u(68)})`, height: `max(20px, ${S.u(68)})` }}
+              style={{
+                left: S.x(r.speaker.x),
+                top: S.y(r.speaker.y),
+                width: `max(15px, ${S.u(68)})`,
+                height: `max(15px, ${S.u(68)})`,
+              }}
             >
               {s.music && s.playing && <span className="pulse-ring absolute inset-0 rounded-full bg-[#bf5af2]" />}
               <span
@@ -366,13 +526,23 @@ export function SmartHomeDemo({ locale, t }: { locale: Locale; t: Labels }) {
                 padding: `${S.u(10)} ${S.u(26)}`,
                 gap: S.u(12),
                 borderRadius: S.u(18),
-                fontSize: `max(11px, ${S.u(40)})`,
+                fontSize: `max(9.5px, ${S.u(40)})`,
                 background: r.id === selected ? BLUE : "#1b1a19",
               }}
             >
               {roomName(r.id)}
               <span className={`flex items-center font-normal ${r.id === selected ? "text-white/85" : "text-white/65"}`} style={{ gap: S.u(8) }}>
-                {s.heat && <span className="rounded-full bg-[#ff9f0a]" style={{ width: S.u(12), height: S.u(12), minWidth: 5, minHeight: 5 }} />}
+                {s.heat && (
+                  <span
+                    className="rounded-full bg-[#ff9f0a]"
+                    style={{
+                      width: S.u(12),
+                      height: S.u(12),
+                      minWidth: 5,
+                      minHeight: 5,
+                    }}
+                  />
+                )}
                 {deg(s.heat ? s.target : AMBIENT)}
               </span>
               {s.music && s.playing && (
@@ -400,25 +570,119 @@ export function SmartHomeDemo({ locale, t }: { locale: Locale; t: Labels }) {
   function phoneLayer() {
     const id = selected;
     const size = (n: number): React.CSSProperties => ({ fontSize: S.u(n) });
-    const label = (key: keyof Labels["devices"], y: number) =>
-      (
-        <span className="pointer-events-none absolute -translate-y-1/2 whitespace-nowrap leading-none text-white" style={{ left: S.x(2485), top: S.y(y), ...size(44) }}>
-          {t.devices[key]}
-        </span>
-      );
-    const hot = (rect: Rect, aria: string, run: () => void, on = false) => (
+    const label = (key: keyof Labels["devices"], y: number) => (
+      <span className="pointer-events-none absolute -translate-y-1/2 whitespace-nowrap leading-none text-white" style={{ left: S.x(2485), top: S.y(y), ...size(44) }}>
+        {t.devices[key]}
+      </span>
+    );
+    const icon = (n: number): React.CSSProperties => ({
+      width: S.u(n),
+      height: S.u(n),
+    });
+    const hot = (rect: Rect, aria: string, run: () => void, glyph: React.ReactNode, on = false) => (
       <button
         type="button"
         aria-label={aria}
         aria-pressed={on || undefined}
         onClick={run}
-        className={`absolute rounded-full transition-colors ${on ? "bg-[#0a84ff]/40" : "hover:bg-white/[0.07] active:bg-white/15"}`}
+        className={`absolute flex items-center justify-center rounded-full text-white transition-colors active:scale-[0.97] ${on ? "bg-[#0a84ff]" : "bg-[#3a3937] hover:bg-[#454442]"}`}
         style={S.box(rect)}
-      />
+      >
+        {glyph}
+      </button>
     );
+    const rowIcon = (glyph: React.ReactNode, y: number) => (
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute flex -translate-x-1/2 -translate-y-1/2 items-center justify-center text-white"
+        style={{ left: S.x(2426), top: S.y(y), ...icon(58) }}
+      >
+        {glyph}
+      </span>
+    );
+    const Bulb = categoryIcons.lighting;
     return (
       <>
-        <h2 className="absolute -translate-y-1/2 truncate font-bold leading-none tracking-tight text-white" style={{ left: S.x(2485), top: S.y(181), maxWidth: S.x(430), ...size(62) }}>
+        {/* The phone itself, drawn over the picture so it is sharp */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute"
+          style={{
+            ...S.box([2328, 36, 3070, 1176]),
+            borderRadius: S.u(80),
+            background: "linear-gradient(180deg, #2a2927 0%, #22211f 100%)",
+            boxShadow: `inset 0 0 0 ${S.u(4)} #43423f, 0 ${S.u(30)} ${S.u(80)} rgba(0,0,0,0.55)`,
+          }}
+        />
+        {(
+          [
+            [2362, 246, 3038, 426],
+            [2362, 438, 3038, 622],
+            [2362, 634, 3038, 846],
+            [2362, 858, 3038, 1142],
+          ] as Rect[]
+        ).map((r, i) => (
+          <div
+            key={i}
+            aria-hidden="true"
+            className="pointer-events-none absolute bg-[#1d1c1b]"
+            style={{
+              ...S.box(r),
+              borderRadius: S.u(36),
+              boxShadow: `inset 0 0 0 ${S.u(2)} rgba(255,255,255,0.04)`,
+            }}
+          />
+        ))}
+        <span aria-hidden="true" className="pointer-events-none absolute -translate-y-1/2 font-semibold leading-none text-white" style={{ left: S.x(2392), top: S.y(86), ...size(36) }}>
+          9:41
+        </span>
+        <span aria-hidden="true" className="pointer-events-none absolute flex -translate-y-1/2 items-center text-white" style={{ left: S.x(2868), top: S.y(86), gap: S.u(14) }}>
+          <svg viewBox="0 0 34 24" style={{ width: S.u(38), height: S.u(27) }} fill="currentColor">
+            <rect x="0" y="16" width="6" height="8" rx="1.5" />
+            <rect x="9" y="11" width="6" height="13" rx="1.5" />
+            <rect x="18" y="5" width="6" height="19" rx="1.5" />
+            <rect x="27" y="0" width="6" height="24" rx="1.5" />
+          </svg>
+          <svg viewBox="0 0 24 18" style={{ width: S.u(36), height: S.u(27) }} fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round">
+            <path d="M2 6.5a14 14 0 0 1 20 0M5.5 10a9 9 0 0 1 13 0M9 13.5a4 4 0 0 1 6 0" />
+            <circle cx="12" cy="16.5" r="1.2" fill="currentColor" stroke="none" />
+          </svg>
+          <svg viewBox="0 0 40 20" style={{ width: S.u(56), height: S.u(28) }}>
+            <rect x="1" y="1" width="34" height="18" rx="5" fill="none" stroke="currentColor" strokeOpacity="0.5" strokeWidth="2" />
+            <rect x="4" y="4" width="26" height="12" rx="2.5" fill="currentColor" />
+            <path d="M37 7v6a2.5 2.5 0 0 0 0-6Z" fill="currentColor" fillOpacity="0.5" />
+          </svg>
+        </span>
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute flex -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-[#383735] text-white"
+          style={{ left: S.x(2410), top: S.y(181), ...icon(78) }}
+        >
+          <ChevronRight className="rotate-180" style={icon(42)} strokeWidth={2.4} />
+        </span>
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute flex items-center justify-center rounded-full bg-[#383735] text-white"
+          style={{ ...S.box([2928, 142, 3014, 220]), gap: S.u(8) }}
+        >
+          {[0, 1, 2].map((i) => (
+            <span key={i} className="rounded-full bg-current" style={icon(9)} />
+          ))}
+        </span>
+        {rowIcon(<Bulb style={icon(50)} strokeWidth={2} />, 293)}
+        {rowIcon(<BlindsIcon style={icon(50)} strokeWidth={2} />, 476)}
+        {rowIcon(<ThermoIcon style={icon(50)} strokeWidth={2} />, 686)}
+        {rowIcon(<NoteIcon style={icon(48)} strokeWidth={2} />, 906)}
+        <SpeakerIcon aria-hidden="true" className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 text-white" style={{ left: S.x(2972), top: S.y(1097), ...icon(48) }} />
+        <h2
+          className="absolute -translate-y-1/2 truncate font-bold leading-none tracking-tight text-white"
+          style={{
+            left: S.x(2485),
+            top: S.y(181),
+            maxWidth: S.x(430),
+            ...size(62),
+          }}
+        >
           {roomName(id)}
         </h2>
 
@@ -445,9 +709,17 @@ export function SmartHomeDemo({ locale, t }: { locale: Locale; t: Labels }) {
         <span className="price pointer-events-none absolute -translate-x-full -translate-y-1/2 whitespace-nowrap leading-none text-white/60" style={{ left: S.x(2998), top: S.y(476), ...size(40) }}>
           {rs.blinds === 0 ? t.state.closed : `${rs.blinds}%`}
         </span>
-        {hot([2395, 528, 2597, 608], t.controls.up, () => moveBlinds(id, 1), moving?.id === id && moving.dir > 0)}
-        {hot([2605, 528, 2797, 608], t.controls.stop, stopBlinds)}
-        {hot([2807, 528, 3008, 608], t.controls.down, () => moveBlinds(id, -1), moving?.id === id && moving.dir < 0)}
+        {hot([2395, 528, 2597, 608], t.controls.up, () => moveBlinds(id, 1), <ChevronRight className="-rotate-90" style={icon(46)} strokeWidth={2.6} />, moving?.id === id && moving.dir > 0)}
+        {hot([2605, 528, 2797, 608], t.controls.stop, stopBlinds, <PauseIcon style={icon(34)} />)}
+        {hot(
+          [2807, 528, 3008, 608],
+          t.controls.down,
+          () => moveBlinds(id, -1),
+          <svg viewBox="0 0 24 24" style={icon(44)} fill="none" stroke="currentColor" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round">
+            <path d="m7 6 5 5 5-5M7 13l5 5 5-5" />
+          </svg>,
+          moving?.id === id && moving.dir < 0,
+        )}
 
         {label("heating", 686)}
         <Toggle on={rs.heat} label={t.devices.heating} x={2955} y={685} onChange={(v) => setRoom(id, { heat: v })} />
@@ -457,28 +729,39 @@ export function SmartHomeDemo({ locale, t }: { locale: Locale; t: Labels }) {
         >
           {deg(rs.target)}
         </span>
-        {hot([2740, 745, 2860, 825], t.state.cooler, () => setRoom(id, { heat: true, target: Math.max(16, rs.target - 0.5) }))}
-        {hot([2885, 745, 3008, 825], t.state.warmer, () => setRoom(id, { heat: true, target: Math.min(28, rs.target + 0.5) }))}
+        {hot([2740, 745, 2860, 825], t.state.cooler, () => setRoom(id, { heat: true, target: Math.max(16, rs.target - 0.5) }), <MinusIcon style={icon(44)} strokeWidth={2.6} />)}
+        {hot([2885, 745, 3008, 825], t.state.warmer, () => setRoom(id, { heat: true, target: Math.min(28, rs.target + 0.5) }), <PlusIcon style={icon(44)} strokeWidth={2.6} />)}
 
         {label("music", 906)}
         <span
           className="pointer-events-none absolute -translate-y-1/2 truncate whitespace-nowrap leading-none text-white/50"
-          style={{ left: S.x(2700), top: S.y(908), maxWidth: S.x(190), ...size(30) }}
+          style={{
+            left: S.x(2700),
+            top: S.y(908),
+            maxWidth: S.x(190),
+            ...size(30),
+          }}
         >
           {t.state.tracks[track]}
         </span>
         <Toggle on={rs.music} label={t.devices.music} x={2955} y={905} onChange={(v) => setRoom(id, { music: v, playing: v && rs.playing })} />
-        {hot([2395, 965, 2625, 1045], t.controls.prev, () => setTrack((n) => (n + t.state.tracks.length - 1) % t.state.tracks.length))}
+        {hot([2395, 965, 2625, 1045], t.controls.prev, () => setTrack((n) => (n + t.state.tracks.length - 1) % t.state.tracks.length), <PrevIcon style={icon(42)} />)}
         <button
           type="button"
           aria-label={rs.playing ? t.controls.pause : t.controls.play}
           onClick={() => setRoom(id, { music: true, playing: !rs.playing })}
           className="absolute flex -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full text-white transition-transform active:scale-95"
-          style={{ left: S.x(2700), top: S.y(1005), width: S.u(100), height: S.u(100), background: "#288af4" }}
+          style={{
+            left: S.x(2700),
+            top: S.y(1005),
+            width: S.u(100),
+            height: S.u(100),
+            background: "#288af4",
+          }}
         >
           {rs.playing ? <PauseIcon style={{ width: S.u(40), height: S.u(40) }} /> : <PlayIcon style={{ width: S.u(44), height: S.u(44), marginLeft: S.u(6) }} />}
         </button>
-        {hot([2785, 965, 3008, 1045], t.controls.next, () => setTrack((n) => (n + 1) % t.state.tracks.length))}
+        {hot([2785, 965, 3008, 1045], t.controls.next, () => setTrack((n) => (n + 1) % t.state.tracks.length), <NextIcon style={icon(42)} />)}
         <Slider label={t.state.volume} value={rs.volume} min={0} x0={2400} x1={2890} y={1097} bar={10} knob={30} fill="#0777ec" knobColor="#0a7cf0" onChange={(volume) => setRoom(id, { volume })} />
       </>
     );
@@ -486,22 +769,92 @@ export function SmartHomeDemo({ locale, t }: { locale: Locale; t: Labels }) {
 
   // ---------- Scene and event cards ----------
 
-  type CardItem<T> = { id: T; x: number; area: [number, number] };
+  type CardItem<T> = {
+    id: T;
+    x: number;
+    area: [number, number];
+    bg: string;
+    fg: string;
+    icon: (p: React.SVGProps<SVGSVGElement>) => React.ReactNode;
+  };
   const sceneItems: CardItem<SceneId>[] = [
-    { id: "morning", x: 250, area: [20, 402] },
-    { id: "away", x: 554, area: [402, 700] },
-    { id: "evening", x: 846, area: [700, 991] },
-    { id: "movie", x: 1136, area: [991, 1282] },
-    { id: "night", x: 1428, area: [1282, 1571] },
+    {
+      id: "morning",
+      x: 250,
+      area: [20, 402],
+      bg: "#fcc53a",
+      fg: "#fff",
+      icon: (p) => <SunIcon {...p} />,
+    },
+    {
+      id: "away",
+      x: 554,
+      area: [402, 700],
+      bg: "#86be66",
+      fg: "#fff",
+      icon: (p) => <OfficeIcon {...p} />,
+    },
+    {
+      id: "evening",
+      x: 846,
+      area: [700, 991],
+      bg: "#8d84f9",
+      fg: "#fff",
+      icon: (p) => <SunsetIcon {...p} />,
+    },
+    {
+      id: "movie",
+      x: 1136,
+      area: [991, 1282],
+      bg: "#fb6a77",
+      fg: "#fff",
+      icon: (p) => <FilmIcon {...p} />,
+    },
+    {
+      id: "night",
+      x: 1428,
+      area: [1282, 1571],
+      bg: "#6b9ff4",
+      fg: "#fff",
+      icon: (p) => <MoonIcon {...p} fill="currentColor" />,
+    },
   ];
   const eventItems: CardItem<EventId>[] = [
-    { id: "doorbell", x: 190, area: [20, 346] },
-    { id: "leak", x: 503, area: [346, 673] },
-    { id: "window", x: 843, area: [673, 1036] },
-    { id: "motion", x: 1230, area: [1036, 1457] },
+    {
+      id: "doorbell",
+      x: 190,
+      area: [20, 346],
+      bg: "#fdeeee",
+      fg: "#fb5a61",
+      icon: (p) => <BellIcon {...p} fill="currentColor" />,
+    },
+    {
+      id: "leak",
+      x: 503,
+      area: [346, 673],
+      bg: "#edf3fd",
+      fg: "#3e96fa",
+      icon: (p) => <DropIcon {...p} fill="currentColor" />,
+    },
+    {
+      id: "window",
+      x: 843,
+      area: [673, 1036],
+      bg: "#fdf4e6",
+      fg: "#f0b429",
+      icon: (p) => <WindowIcon {...p} />,
+    },
+    {
+      id: "motion",
+      x: 1230,
+      area: [1036, 1457],
+      bg: "#ebf6ec",
+      fg: "#43b85a",
+      icon: (p) => <MotionIcon {...p} />,
+    },
   ];
 
-  function cardLayer<T extends string>(size: Size, items: CardItem<T>[], names: Record<T, string>, labelY: number, labelSize: number, run: (id: T) => void, active?: T | null) {
+  function cardLayer<T extends string>(size: Size, items: CardItem<T>[], names: Record<T, string>, labelY: number, labelSize: number, circle: number, run: (id: T) => void, active?: T | null) {
     const C = units(size);
     const top = 10;
     const bottom = 314;
@@ -514,10 +867,31 @@ export function SmartHomeDemo({ locale, t }: { locale: Locale; t: Labels }) {
           <span className="sr-only">{names[b.id]}</span>
           <span
             aria-hidden="true"
-            className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full transition-shadow duration-300"
-            style={{ left: cx, top: at(125), width: C.u(184), height: C.u(184), boxShadow: on ? `0 0 0 ${C.u(6)} #1d1d1f` : undefined }}
-          />
-          <span aria-hidden="true" className="absolute -translate-x-1/2 -translate-y-1/2 whitespace-nowrap leading-none text-[#1d1d1f]" style={{ left: cx, top: at(labelY), fontSize: `max(13px, ${C.u(labelSize)})` }}>
+            className="absolute flex -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full transition-[box-shadow,transform] duration-300 group-hover:scale-105"
+            style={{
+              left: cx,
+              top: at(125),
+              width: C.u(circle),
+              height: C.u(circle),
+              background: b.bg,
+              color: b.fg,
+              boxShadow: on ? `0 0 0 ${C.u(8)} #fff, 0 0 0 ${C.u(14)} #1d1d1f` : undefined,
+            }}
+          >
+            {b.icon({
+              style: { width: "50%", height: "50%" },
+              strokeWidth: 1.9,
+            })}
+          </span>
+          <span
+            aria-hidden="true"
+            className="absolute -translate-x-1/2 -translate-y-1/2 whitespace-nowrap leading-none text-[#1d1d1f]"
+            style={{
+              left: cx,
+              top: at(labelY),
+              fontSize: `max(13px, ${C.u(labelSize)})`,
+            }}
+          >
             {names[b.id]}
           </span>
         </button>
@@ -525,8 +899,35 @@ export function SmartHomeDemo({ locale, t }: { locale: Locale; t: Labels }) {
     });
   }
 
-  const card = "bg-white shadow-[0_18px_40px_-28px_rgba(0,0,0,0.35)] ring-1 ring-black/[0.04] transition-transform md:min-w-0";
-  const scroller = "no-scrollbar -mx-[22px] overflow-x-auto px-[22px] py-2 md:mx-0 md:overflow-visible md:p-0";
+  const card = "bg-white shadow-[0_18px_40px_-28px_rgba(0,0,0,0.35)] ring-1 ring-black/[0.04]";
+
+  /** On phones the cards are laid out as a simple grid, so they fit the screen with readable words. */
+  function phoneCard<T extends string>(items: CardItem<T>[], names: Record<T, string>, run: (id: T) => void, active?: T | null) {
+    return (
+      <div
+        className={`grid gap-1 rounded-[24px] px-2 py-4 md:hidden ${card}`}
+        style={{
+          gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))`,
+        }}
+      >
+        {items.map((b) => (
+          <button key={b.id} type="button" onClick={() => run(b.id)} aria-pressed={active === undefined ? undefined : active === b.id} className="flex flex-col items-center gap-2 text-center">
+            <span
+              className="flex h-12 w-12 items-center justify-center rounded-full transition-shadow"
+              style={{
+                background: b.bg,
+                color: b.fg,
+                boxShadow: active === b.id ? "0 0 0 3px #fff, 0 0 0 5px #1d1d1f" : undefined,
+              }}
+            >
+              {b.icon({ style: { width: 24, height: 24 }, strokeWidth: 1.9 })}
+            </span>
+            <span className="text-[12px] leading-tight text-[#1d1d1f]">{names[b.id]}</span>
+          </button>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="container-wide">
@@ -536,11 +937,9 @@ export function SmartHomeDemo({ locale, t }: { locale: Locale; t: Labels }) {
           {phoneLayer()}
         </Crop>
         <div className="space-y-3 lg:hidden">
-          <div ref={planScroller} className="no-scrollbar -mx-[22px] overflow-x-auto px-[22px] md:mx-0 md:px-0">
-            <Crop size={STAGE} crop={CROP.plan} src={`${BASE}/demo/stage`} sizes="2000px" radius={44} className="min-w-[720px]">
-              {planLayer()}
-            </Crop>
-          </div>
+          <Crop size={STAGE} crop={CROP.plan} src={`${BASE}/demo/stage`} sizes="2000px" radius={44}>
+            {planLayer()}
+          </Crop>
           <Crop size={STAGE} crop={CROP.phone} src={`${BASE}/demo/stage`} sizes="1600px" radius={44} className="mx-auto max-w-[420px]">
             {phoneLayer()}
           </Crop>
@@ -606,15 +1005,17 @@ export function SmartHomeDemo({ locale, t }: { locale: Locale; t: Labels }) {
         )}
       </div>
 
-      <div className="mt-3 grid grid-cols-1 gap-1 md:gap-3 lg:mt-[1.29%] lg:grid-cols-[1591fr_1477fr] lg:gap-[1.35%]">
-        <section aria-label={t.scenesTitle} className={scroller}>
-          <Crop size={SCENES} crop={[0, 0, SCENES.w, SCENES.h]} src={`${BASE}/demo/scenes`} radius={45} className={`min-w-[600px] ${card}`}>
-            {cardLayer(SCENES, sceneItems, t.scenes, 255, 44, runScene, scene?.id ?? null)}
+      <div className="mt-3 grid grid-cols-1 gap-3 lg:mt-[1.29%] lg:grid-cols-[1591fr_1477fr] lg:gap-[1.35%]">
+        <section aria-label={t.scenesTitle}>
+          {phoneCard(sceneItems, t.scenes, runScene, scene?.id ?? null)}
+          <Crop size={SCENES} crop={[0, 0, SCENES.w, SCENES.h]} radius={45} className={`hidden md:block ${card}`}>
+            {cardLayer(SCENES, sceneItems, t.scenes, 255, 44, 170, runScene, scene?.id ?? null)}
           </Crop>
         </section>
-        <section aria-label={t.eventsTitle} className={scroller}>
-          <Crop size={EVENTS} crop={[0, 0, EVENTS.w, EVENTS.h]} src={`${BASE}/demo/events`} radius={45} className={`min-w-[560px] ${card}`}>
-            {cardLayer(EVENTS, eventItems, t.events, 240, 40, trigger)}
+        <section aria-label={t.eventsTitle}>
+          {phoneCard(eventItems, t.events, trigger)}
+          <Crop size={EVENTS} crop={[0, 0, EVENTS.w, EVENTS.h]} radius={45} className={`hidden md:block ${card}`}>
+            {cardLayer(EVENTS, eventItems, t.events, 240, 40, 152, trigger)}
           </Crop>
         </section>
       </div>
@@ -636,8 +1037,8 @@ function Crop({
 }: {
   size: Size;
   crop: Rect;
-  /** Path without ".webp"; when `sizes` is given a "-1600.webp" copy exists too. */
-  src: string;
+  /** Path without ".webp"; when `sizes` is given a "-1600.webp" copy exists too. Without it the children draw everything. */
+  src?: string;
   sizes?: string;
   radius: number;
   className?: string;
@@ -647,21 +1048,39 @@ function Crop({
   const w = x1 - x0;
   const h = y1 - y0;
   return (
-    <div className={`relative overflow-hidden ${className}`} style={{ aspectRatio: `${w} / ${h}`, borderRadius: `${(radius / w) * 100}% / ${(radius / h) * 100}%` }}>
-      <div className="absolute [container-type:inline-size]" style={{ width: `${(size.w / w) * 100}%`, height: `${(size.h / h) * 100}%`, left: `${(-x0 / w) * 100}%`, top: `${(-y0 / h) * 100}%` }}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={`${src}.webp`}
-          srcSet={sizes ? `${src}-1600.webp 1600w, ${src}.webp ${size.w}w` : undefined}
-          sizes={sizes}
-          alt=""
-          width={size.w}
-          height={size.h}
-          loading="lazy"
-          decoding="async"
-          draggable={false}
-          className="absolute inset-0 h-full w-full select-none"
-        />
+    <div
+      className={`relative overflow-hidden ${className}`}
+      style={{
+        aspectRatio: `${w} / ${h}`,
+        borderRadius: `${(radius / w) * 100}% / ${(radius / h) * 100}%`,
+      }}
+    >
+      <div
+        className="absolute [container-type:inline-size]"
+        style={{
+          width: `${(size.w / w) * 100}%`,
+          height: `${(size.h / h) * 100}%`,
+          left: `${(-x0 / w) * 100}%`,
+          top: `${(-y0 / h) * 100}%`,
+        }}
+      >
+        {src && (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={`${src}.webp`}
+              srcSet={sizes ? `${src}-1600.webp 1600w, ${src}.webp ${size.w}w` : undefined}
+              sizes={sizes}
+              alt=""
+              width={size.w}
+              height={size.h}
+              loading="lazy"
+              decoding="async"
+              draggable={false}
+              className="absolute inset-0 h-full w-full select-none"
+            />
+          </>
+        )}
         {children}
       </div>
     </div>
@@ -677,7 +1096,14 @@ function Toggle({ on, label, x, y, onChange }: { on: boolean; label: string; x: 
       aria-label={label}
       onClick={() => onChange(!on)}
       className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full transition-[background-color,box-shadow] duration-200"
-      style={{ left: S.x(x), top: S.y(y), width: S.u(104), height: S.u(60), background: on ? BLUE : "#4a4a4d", boxShadow: on ? `0 0 ${S.u(16)} rgba(40,134,252,0.45)` : "none" }}
+      style={{
+        left: S.x(x),
+        top: S.y(y),
+        width: S.u(104),
+        height: S.u(60),
+        background: on ? BLUE : "#4a4a4d",
+        boxShadow: on ? `0 0 ${S.u(16)} rgba(40,134,252,0.45)` : "none",
+      }}
     >
       <span className="absolute top-1/2 -translate-y-1/2 rounded-full bg-white shadow-sm transition-[left] duration-200" style={{ width: S.u(50), height: S.u(50), left: on ? S.u(49) : S.u(5) }} />
     </button>
@@ -714,16 +1140,16 @@ function Slider({
     <div className="absolute" style={S.box([x0, y - 34, x1, y + 34])}>
       <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 rounded-full bg-[#2e2e2f]" style={{ height: S.u(bar) }} />
       <div className="absolute left-0 top-1/2 -translate-y-1/2 rounded-full transition-colors" style={{ width: pct, height: S.u(bar), background: fill }} />
-      <div className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full shadow-sm" style={{ left: pct, width: S.u(knob), height: S.u(knob), background: knobColor }} />
-      <input
-        type="range"
-        aria-label={label}
-        min={min}
-        max={100}
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+      <div
+        className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full shadow-sm"
+        style={{
+          left: pct,
+          width: S.u(knob),
+          height: S.u(knob),
+          background: knobColor,
+        }}
       />
+      <input type="range" aria-label={label} min={min} max={100} value={value} onChange={(e) => onChange(Number(e.target.value))} className="absolute inset-0 h-full w-full cursor-pointer opacity-0" />
     </div>
   );
 }
