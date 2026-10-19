@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { createContext, Suspense, useContext, useEffect, useState } from "react";
 import { adminSignIn, adminSignOut, countWhere, createFirstAdmin, useAdminAuth, type AdminProfile } from "@/lib/admin-store";
 import { firebaseConfigured } from "@/lib/firebase";
+import { can, permissionForPath } from "@/lib/permissions";
 import { LogoMark } from "../icons";
 import { AdminForm, str } from "./admin-form";
 import { AdminNav } from "./admin-nav";
@@ -97,6 +98,7 @@ function useBadges(enabled: boolean) {
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const auth = useAdminAuth();
+  const pathname = usePathname();
   const badges = useBadges(auth.status === "admin");
 
   if (!firebaseConfigured) {
@@ -125,7 +127,13 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       <div className="min-h-screen md:flex">
         <AdminNav user={auth.profile} badges={badges} />
         <main className="min-w-0 flex-1 p-5 md:p-10">
-          <Suspense>{children}</Suspense>
+          {(() => {
+            const needed = permissionForPath(pathname.endsWith("/") ? pathname : `${pathname}/`);
+            if (needed && !can(auth.profile, needed)) {
+              return <p className="rounded-2xl bg-white p-8 text-center text-[15px] text-mute">Нямате достъп до тази страница. Помолете администратора да ви го даде.</p>;
+            }
+            return <Suspense>{children}</Suspense>;
+          })()}
         </main>
       </div>
     </ProfileContext.Provider>

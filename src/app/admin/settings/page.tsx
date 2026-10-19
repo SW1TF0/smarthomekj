@@ -4,11 +4,21 @@ import { AdminForm, euroToCents, str } from "@/components/admin/admin-form";
 import { useAdmin } from "@/components/admin/admin-shell";
 import { Card, Empty, Loading, PageHeader, inputCls, labelCls } from "@/components/admin/ui";
 import { getAdminSettings, saveSettings, useAdminData } from "@/lib/admin-store";
+import { can } from "@/lib/permissions";
 import { defaultSettings, type SiteSettings } from "@/lib/settings";
 
 type FieldDef = { key: keyof SiteSettings; label: string; type?: "money" | "bool" };
 
 const groups: { title: string; hint?: string; fields: FieldDef[] }[] = [
+  {
+    title: "Включване и изключване",
+    hint: "Махнете отметката и натиснете „Запази“, за да скриете нещо от сайта. Можете да го включите отново по всяко време.",
+    fields: [
+      { key: "bankTransferEnabled", label: "Плащане с банков превод", type: "bool" },
+      { key: "codEnabled", label: "Плащане с наложен платеж", type: "bool" },
+      { key: "chatEnabled", label: "Чат на сайта", type: "bool" },
+    ],
+  },
   {
     title: "Данни за фирмата",
     hint: "Показват се в долната част на сайта, в Общите условия, Политиката за поверителност и в потвърждението на поръчката. Задължителни по Закона за електронната търговия.",
@@ -36,8 +46,6 @@ const groups: { title: string; hint?: string; fields: FieldDef[] }[] = [
     fields: [
       { key: "shippingCents", label: "Цена на доставка (€)", type: "money" },
       { key: "freeShippingFromCents", label: "Безплатна доставка над (€)", type: "money" },
-      { key: "codEnabled", label: "Наложен платеж", type: "bool" },
-      { key: "bankTransferEnabled", label: "Банков превод", type: "bool" },
     ],
   },
   {
@@ -55,7 +63,6 @@ const groups: { title: string; hint?: string; fields: FieldDef[] }[] = [
     title: "Чат за поддръжка",
     hint: "Ботът отговаря от „Въпроси и отговори“. Когато не знае отговора, дава вашия имейл и телефон или предлага човек от екипа.",
     fields: [
-      { key: "chatEnabled", label: "Показвай чата на сайта", type: "bool" },
       { key: "chatBotName", label: "Име на бота" },
     ],
   },
@@ -76,7 +83,7 @@ function read(f: FormData): SiteSettings {
 export default function SettingsPage() {
   const admin = useAdmin();
   const { data: s, error } = useAdminData(getAdminSettings);
-  if (admin.role !== "ADMIN") return <Empty text="Само администратор може да променя настройките." />;
+  if (!can(admin, "settings")) return <Empty text="Нямате достъп до настройките." />;
   if (!s) return <Loading error={error} />;
 
   return (
