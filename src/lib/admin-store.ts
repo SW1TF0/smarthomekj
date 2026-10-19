@@ -32,10 +32,11 @@ import { useEffect, useState } from "react";
 import { firebaseAuth, firestore, secondaryAuth } from "./firebase";
 import { starterFaqs, starterProducts, type FaqDoc, type ProductDoc } from "./products";
 import { defaultSettings, type SiteSettings } from "./settings";
+import type { Permission } from "./permissions";
 import type { OrderDoc } from "./store";
 
 export type AdminRole = "ADMIN" | "EDITOR";
-export type AdminProfile = { uid: string; email: string; name: string; role: AdminRole; lastLoginAt?: Timestamp | null };
+export type AdminProfile = { uid: string; email: string; name: string; role: AdminRole; permissions?: Permission[]; lastLoginAt?: Timestamp | null };
 
 export const ORDER_STATUSES = ["PENDING", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED", "REFUNDED"] as const;
 
@@ -338,12 +339,21 @@ export async function listAdmins() {
 }
 
 /** Creates a colleague's login on a second Firebase app instance, so the current admin stays signed in. */
-export async function createAdmin(name: string, email: string, password: string, role: AdminRole) {
+export async function createAdmin(name: string, email: string, password: string, role: AdminRole, permissions: Permission[]) {
   const auth = secondaryAuth()!;
   const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
   await signOut(auth);
-  await setDoc(doc(db(), "admins", cred.user.uid), { email: email.trim().toLowerCase(), name: name || email, role, createdAt: serverTimestamp() });
+  await setDoc(doc(db(), "admins", cred.user.uid), {
+    email: email.trim().toLowerCase(),
+    name: name || email,
+    role,
+    permissions: role === "ADMIN" ? [] : permissions,
+    createdAt: serverTimestamp(),
+  });
 }
+
+export const updateAdminAccess = (uid: string, role: AdminRole, permissions: Permission[]) =>
+  updateDoc(doc(db(), "admins", uid), { role, permissions: role === "ADMIN" ? [] : permissions });
 
 export const removeAdmin = (uid: string) => deleteDoc(doc(db(), "admins", uid));
 

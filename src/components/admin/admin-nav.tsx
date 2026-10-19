@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { adminSignOut } from "@/lib/admin-store";
+import { adminSignOut, type AdminProfile } from "@/lib/admin-store";
+import { can, permissionForPath } from "@/lib/permissions";
 import { LogoMark, MenuIcon } from "../icons";
 
 const items = [
@@ -14,11 +15,11 @@ const items = [
   { href: "/admin/chats/", label: "Чат", badge: "chats" },
   { href: "/admin/faq/", label: "Въпроси (FAQ)" },
   { href: "/admin/requests/", label: "GDPR и откази", badge: "requests" },
-  { href: "/admin/settings/", label: "Настройки", role: "ADMIN" },
+  { href: "/admin/settings/", label: "Настройки" },
   { href: "/admin/users/", label: "Потребители" },
 ] as const;
 
-export function AdminNav({ user, badges }: { user: { name: string; role: string }; badges: Record<string, number> }) {
+export function AdminNav({ user, badges }: { user: AdminProfile; badges: Record<string, number> }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
@@ -35,7 +36,10 @@ export function AdminNav({ user, badges }: { user: { name: string; role: string 
       <nav className={`${open ? "block" : "hidden"} px-3 pb-5 md:block`}>
         <ul className="space-y-0.5">
           {items
-            .filter((i) => !("role" in i) || i.role === user.role)
+            .filter((i) => {
+              const needed = permissionForPath(i.href);
+              return needed ? can(user, needed) : true;
+            })
             .map((item) => {
               const path = pathname.endsWith("/") ? pathname : `${pathname}/`;
               const active = "exact" in item ? path === item.href : path.startsWith(item.href);
@@ -58,7 +62,7 @@ export function AdminNav({ user, badges }: { user: { name: string; role: string 
         </ul>
         <div className="mt-6 border-t border-line px-3 pt-4 text-[13px] text-mute">
           <p className="font-medium text-ink">{user.name}</p>
-          <p>{user.role === "ADMIN" ? "Администратор" : "Редактор"}</p>
+          <p>{user.role === "ADMIN" ? "Администратор" : "Служител"}</p>
           <div className="mt-3 flex gap-3">
             <Link href="/bg/" target="_blank" className="text-link">
               Към сайта ↗

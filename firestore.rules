@@ -9,6 +9,18 @@ service cloud.firestore {
     function signedIn() { return request.auth != null; }
     function isTeam() { return signedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid)); }
     function isOwner() { return isTeam() && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == "ADMIN"; }
+    // Administrators may do everything; other team members only the sections ticked in Admin → Users.
+    // Members added before permissions existed keep everything except settings (see src/lib/permissions.ts).
+    function can(p) {
+      return isOwner() || (isTeam() && p in get(/databases/$(database)/documents/admins/$(request.auth.uid)).data
+        .get("permissions", ["orders", "products", "inquiries", "chats", "faq", "requests"]));
+    }
+    function methodOn(m) {
+      let path = /databases/$(database)/documents/config/settings;
+      return !exists(path)
+        || (m == "BANK" && get(path).data.get("bankTransferEnabled", true) == true)
+        || (m == "COD" && get(path).data.get("codEnabled", true) == true);
+    }
 
     function str(v, max) { return v is string && v.size() <= max; }
     function reqStr(v, max) { return str(v, max) && v.size() > 0; }
@@ -22,18 +34,18 @@ service cloud.firestore {
     match /products/{slug} {
       allow get: if resource.data.active == true || isTeam();
       allow list: if isTeam() || resource.data.active == true;
-      allow create, update: if isTeam();
+      allow create, update: if can("products");
       allow delete: if isOwner();
     }
 
     match /faq/{id} {
       allow read: if resource.data.active == true || isTeam();
-      allow write: if isTeam();
+      allow write: if can("faq");
     }
 
     match /config/settings {
       allow read: if true;
-      allow write: if isOwner();
+      allow write: if can("settings");
     }
 
     // First run: config/setup does not exist, so the first signed-in person may make themselves the owner, once.
@@ -62,10 +74,12 @@ service cloud.firestore {
     // ---------- Visitor submissions: create-only ----------
 
     match /orders/{id} {
-      allow read, update: if isTeam();
+      allow read, update: if can("orders");
       allow delete: if false;
       allow create: if reqStr(request.resource.data.number, 40)
         && request.resource.data.paymentMethod in ["COD", "BANK"]
+        // A payment method switched off in Admin → Settings cannot be used.
+        && methodOn(request.resource.data.paymentMethod)
         && locale(request.resource.data.locale)
         && isEmail(request.resource.data.email)
         && reqStr(request.resource.data.name, 120)
@@ -92,7 +106,7 @@ service cloud.firestore {
     }
 
     match /inquiries/{id} {
-      allow read, update, delete: if isTeam();
+      allow read, update, delete: if can("inquiries");
       allow create: if reqStr(request.resource.data.name, 120)
         && isEmail(request.resource.data.email)
         && str(request.resource.data.phone, 40)
@@ -105,7 +119,7 @@ service cloud.firestore {
     }
 
     match /privacyRequests/{id} {
-      allow read, update: if isTeam();
+      allow read, update: if can("requests");
       allow delete: if isOwner();
       allow create: if request.resource.data.type in ["ACCESS", "PORTABILITY", "RECTIFICATION", "ERASURE", "OBJECTION"]
         && reqStr(request.resource.data.name, 120)
@@ -116,7 +130,7 @@ service cloud.firestore {
     }
 
     match /withdrawals/{id} {
-      allow read, update: if isTeam();
+      allow read, update: if can("requests");
       allow delete: if isOwner();
       allow create: if reqStr(request.resource.data.orderNumber, 40)
         && reqStr(request.resource.data.name, 120)
@@ -145,14 +159,14 @@ service cloud.firestore {
 
     match /chats/{chatId} {
       allow get: if true;
-      allow list, delete: if isTeam();
+      allow list, delete: if can("chats");
       allow create: if str(request.resource.data.visitorId, 80)
         && locale(request.resource.data.locale)
         && request.resource.data.mode == "BOT"
         && request.resource.data.unreadForAdmin == true
         && now("createdAt") && now("lastMessageAt")
         && only(["visitorId", "locale", "mode", "unreadForAdmin", "createdAt", "lastMessageAt"]);
-      allow update: if isTeam()
+      allow update: if can("chats")
         || (resource.data.mode != "CLOSED"
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["mode", "visitorName", "visitorEmail", "unreadForAdmin", "lastMessageAt"])
             && request.resource.data.mode in [resource.data.mode, "HUMAN"]
@@ -163,9 +177,9 @@ service cloud.firestore {
 
       match /messages/{messageId} {
         allow read: if true;
-        allow delete: if isTeam();
+        allow delete: if can("chats");
         allow update: if false;
-        allow create: if isTeam()
+        allow create: if can("chats")
           || (request.resource.data.role in ["USER", "BOT"]
               && reqStr(request.resource.data.content, 2000)
               && now("createdAt")

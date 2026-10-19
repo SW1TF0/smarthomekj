@@ -6,6 +6,7 @@ import { useAdmin } from "@/components/admin/admin-shell";
 import { Badge, Card, Loading, PageHeader } from "@/components/admin/ui";
 import { listAllProducts, listInquiries, listOrders, loadStarterData, toDate, useAdminData } from "@/lib/admin-store";
 import { formatDate, formatMoney } from "@/lib/money";
+import { can } from "@/lib/permissions";
 import { starterProducts } from "@/lib/products";
 
 const DISMISS_KEY = "shkj_admin_hidden_starter";
@@ -21,7 +22,9 @@ export default function Dashboard() {
       setHidden(null);
     }
   }, []);
-  const { data, error, reload } = useAdminData(() => Promise.all([listOrders(), listInquiries(), listAllProducts()]));
+  const { data, error, reload } = useAdminData(() =>
+    Promise.all([can(admin, "orders") ? listOrders() : [], can(admin, "inquiries") ? listInquiries() : [], can(admin, "products") ? listAllProducts() : []]),
+  );
   if (!data) return <Loading error={error} />;
   const [orders, inquiries, products] = data;
 
@@ -34,18 +37,18 @@ export default function Dashboard() {
   const lowStock = products.filter((p) => p.active && p.stock <= 5).sort((a, b) => a.stock - b.stock).slice(0, 6);
 
   const stats = [
-    { label: "Оборот този месец", value: formatMoney(revenue), href: "/admin/orders/" },
-    { label: "Поръчки този месец", value: thisMonth.length, href: "/admin/orders/" },
-    { label: "Чакат потвърждение", value: orders.filter((o) => o.status === "PENDING").length, href: "/admin/orders/" },
-    { label: "Нови запитвания", value: inquiries.filter((i) => i.status === "NEW").length, href: "/admin/inquiries/" },
-    { label: "Продукти в магазина", value: products.filter((p) => p.active).length, href: "/admin/products/" },
-  ];
+    { label: "Оборот този месец", value: formatMoney(revenue), href: "/admin/orders/", needs: "orders" },
+    { label: "Поръчки този месец", value: thisMonth.length, href: "/admin/orders/", needs: "orders" },
+    { label: "Чакат потвърждение", value: orders.filter((o) => o.status === "PENDING").length, href: "/admin/orders/", needs: "orders" },
+    { label: "Нови запитвания", value: inquiries.filter((i) => i.status === "NEW").length, href: "/admin/inquiries/", needs: "inquiries" },
+    { label: "Продукти в магазина", value: products.filter((p) => p.active).length, href: "/admin/products/", needs: "products" },
+  ] as const;
 
   return (
     <>
       <PageHeader title={`Здравейте, ${admin.name.split(" ")[0]}`} subtitle="Какво се случва в SmartHomeKJ днес." />
 
-      {products.length === 0 && (
+      {products.length === 0 && can(admin, "products") && (
         <Card className="mb-6 bg-blue-50 ring-blue-100">
           <h2 className="font-semibold">Заредете началните продукти</h2>
           <p className="mt-1 text-[14px] text-ink-2">Магазинът показва примерния каталог. Заредете го в базата, за да редактирате цени, наличности и въпроси.</p>
@@ -109,7 +112,7 @@ export default function Dashboard() {
       )}
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        {stats.map((s) => (
+        {stats.filter((s) => can(admin, s.needs)).map((s) => (
           <Link key={s.label} href={s.href}>
             <Card className="h-full transition-shadow hover:shadow-md">
               <p className="text-[13px] text-mute">{s.label}</p>
