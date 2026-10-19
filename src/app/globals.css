@@ -306,47 +306,13 @@ body {
 }
 
 /* Live demo */
-.demo-range {
-  -webkit-appearance: none;
-  appearance: none;
-  display: block;
-  width: 100%;
-  height: 30px;
-  border-radius: 10px;
-  background: linear-gradient(to right, var(--fill, #0071e3) var(--v, 50%), #e8e8ed var(--v, 50%));
-  cursor: pointer;
+.demo-eq > span {
+  transform-origin: bottom;
+  animation: demo-eq 0.8s ease-in-out infinite alternate;
 }
-.demo-range::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 6px;
-  height: 20px;
-  border-radius: 3px;
-  background: #fff;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
-}
-.demo-range::-moz-range-track {
-  background: transparent;
-}
-.demo-range::-moz-range-thumb {
-  width: 6px;
-  height: 20px;
-  border: 0;
-  border-radius: 3px;
-  background: #fff;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
-}
-.demo-ring {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: demo-ring 2.4s ease-out infinite;
-}
-.demo-ring-fast {
-  animation-duration: 1.1s;
-}
-@keyframes demo-ring {
-  from { transform: scale(1); opacity: 0.8; }
-  to { transform: scale(3.6); opacity: 0; }
+@keyframes demo-eq {
+  from { transform: scaleY(0.3); }
+  to { transform: scaleY(1); }
 }
 .demo-flash {
   animation: demo-flash 1.2s ease-in-out infinite;
