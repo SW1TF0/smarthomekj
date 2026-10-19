@@ -219,6 +219,12 @@ export const PauseIcon = (p: IconProps) => (
     <path d="M8 5v14M16 5v14" strokeWidth={3} />
   </Svg>
 );
+export const SpeakerIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4v-5Z" fill="currentColor" />
+    <path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" />
+  </Svg>
+);
 export const HouseIcon = (p: IconProps) => (
   <Svg {...p}>
     <path d="M3.5 11 12 4l8.5 7M6 9.5V20h12V9.5" />

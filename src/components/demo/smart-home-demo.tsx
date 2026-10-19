@@ -3,10 +3,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Dictionary } from "@/i18n";
 import type { Locale } from "@/i18n/config";
-import { BellIcon, CheckIcon, DropIcon, MotionIcon, PauseIcon, PlayIcon, UnlockIcon, WindowIcon } from "../icons";
+import { BellIcon, CheckIcon, DropIcon, MotionIcon, PauseIcon, PlayIcon, SpeakerIcon, UnlockIcon, WindowIcon } from "../icons";
 
-// The demo is the Canva design itself (public/demo/*.webp). Everything that changes is drawn on top of it,
-// positioned in the pixels of the 2x Canva export, so it lines up 1:1 at any size.
+// The demo is the Canva design itself (public/demo/*.webp). The words and everything that changes are drawn
+// on top of it as real text, positioned in the pixels of the 2x Canva export, so they line up 1:1 and stay sharp.
 
 type Labels = Dictionary["demo"];
 type RoomId = "living" | "kitchen" | "bedroom" | "kids" | "bath" | "hall";
@@ -38,6 +38,8 @@ const STAGE: Size = { w: 3111, h: 1206 };
 const SCENES: Size = { w: 1591, h: 324 };
 const EVENTS: Size = { w: 1477, h: 324 };
 const STEP_MS = 380;
+/** Room temperature when its heating is off. */
+const AMBIENT = 19;
 const BLUE = "#2886fc";
 
 /** Position helpers in the pixels of one image. */
@@ -50,12 +52,12 @@ function units(s: Size) {
 }
 const S = units(STAGE);
 
-const ROOMS: { id: RoomId; main: Rect; extra?: Rect[]; pill: { x: number; y: number; w: number } }[] = [
-  { id: "living", main: [204, 184, 951, 687], pill: { x: 508, y: 435, w: 126 } },
-  { id: "kitchen", main: [980, 184, 1507, 587], pill: { x: 1219, y: 436, w: 172 } },
-  { id: "bedroom", main: [1540, 184, 2164, 687], pill: { x: 1879, y: 441, w: 200 } },
-  { id: "kids", main: [204, 707, 807, 1080], pill: { x: 539, y: 897, w: 190 } },
-  { id: "bath", main: [980, 753, 1400, 1080], pill: { x: 1178, y: 896, w: 144 } },
+const ROOMS: { id: RoomId; main: Rect; extra?: Rect[]; pill: { x: number; y: number; w: number }; speaker: { x: number; y: number } }[] = [
+  { id: "living", main: [204, 184, 951, 687], pill: { x: 508, y: 435, w: 126 }, speaker: { x: 880, y: 255 } },
+  { id: "kitchen", main: [980, 184, 1507, 587], pill: { x: 1219, y: 436, w: 172 }, speaker: { x: 1050, y: 520 } },
+  { id: "bedroom", main: [1540, 184, 2164, 687], pill: { x: 1879, y: 441, w: 200 }, speaker: { x: 1650, y: 600 } },
+  { id: "kids", main: [204, 707, 807, 1080], pill: { x: 539, y: 897, w: 190 }, speaker: { x: 735, y: 1010 } },
+  { id: "bath", main: [980, 753, 1400, 1080], pill: { x: 1178, y: 896, w: 144 }, speaker: { x: 1330, y: 1010 } },
   {
     id: "hall",
     main: [1400, 687, 2164, 1080],
@@ -64,6 +66,7 @@ const ROOMS: { id: RoomId; main: Rect; extra?: Rect[]; pill: { x: number; y: num
       [807, 687, 980, 1080],
     ],
     pill: { x: 1641, y: 897, w: 218 },
+    speaker: { x: 2095, y: 1010 },
   },
 ];
 
@@ -94,6 +97,7 @@ export function SmartHomeDemo({ locale, t }: { locale: Locale; t: Labels }) {
   const [track, setTrack] = useState(0);
   const [moving, setMoving] = useState<{ id: RoomId; dir: 1 | -1 } | null>(null);
   const timers = useRef<number[]>([]);
+  const planScroller = useRef<HTMLDivElement>(null);
   const blindsTimer = useRef<number | null>(null);
 
   const stopBlinds = () => {
@@ -123,15 +127,22 @@ export function SmartHomeDemo({ locale, t }: { locale: Locale; t: Labels }) {
     if (moving.dir > 0 ? b >= 100 : b <= 0) stopBlinds();
   }, [state, moving]);
 
+  // On phones the plan is wider than the screen: keep the chosen room in view.
+  useEffect(() => {
+    const el = planScroller.current;
+    if (!el || el.scrollWidth <= el.clientWidth) return;
+    const r = ROOMS.find((x) => x.id === selected)!;
+    const [x0, , x1] = CROP.plan;
+    const centre = ((r.main[0] + r.main[2]) / 2 - x0) / (x1 - x0);
+    el.scrollTo({ left: centre * el.scrollWidth - el.clientWidth / 2, behavior: "smooth" });
+  }, [selected]);
+
   const temp = useMemo(() => new Intl.NumberFormat({ bg: "bg-BG", en: "en-IE", tr: "tr-TR" }[locale], { minimumFractionDigits: 1, maximumFractionDigits: 1 }), [locale]);
   const deg = useCallback((n: number) => `${temp.format(n)}°`, [temp]);
   const roomName = (id: RoomId) => t.rooms[id];
 
   const rs = state.rooms[selected];
   const setRoom = (id: RoomId, patch: Partial<RoomState>) => setState((s) => ({ ...s, rooms: { ...s.rooms, [id]: { ...s.rooms[id], ...patch } } }));
-  // The Bulgarian words are part of the Canva picture. Other languages get a copy without them and the words on top.
-  const lang = locale === "bg" ? "bg" : "xx";
-  const ownLabels = lang === "xx";
 
   // ---------- Scenes ----------
 
@@ -325,6 +336,27 @@ export function SmartHomeDemo({ locale, t }: { locale: Locale; t: Labels }) {
             <span
               key={r.id}
               aria-hidden="true"
+              className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2"
+              style={{ left: S.x(r.speaker.x), top: S.y(r.speaker.y), width: `max(20px, ${S.u(68)})`, height: `max(20px, ${S.u(68)})` }}
+            >
+              {s.music && s.playing && <span className="pulse-ring absolute inset-0 rounded-full bg-[#bf5af2]" />}
+              <span
+                className={`absolute inset-0 flex items-center justify-center rounded-full ring-1 transition-colors duration-300 ${
+                  s.music ? "bg-[#bf5af2] text-white ring-white/40" : "bg-black/65 text-white/55 ring-white/15"
+                }`}
+              >
+                <SpeakerIcon style={{ width: "55%", height: "55%" }} />
+              </span>
+            </span>
+          );
+        })}
+
+        {ROOMS.map((r) => {
+          const s = state.rooms[r.id];
+          return (
+            <span
+              key={r.id}
+              aria-hidden="true"
               className="pointer-events-none absolute flex -translate-x-1/2 -translate-y-1/2 items-center justify-center whitespace-nowrap font-medium leading-none text-white transition-colors duration-300"
               style={{
                 left: S.x(r.pill.x),
@@ -334,11 +366,15 @@ export function SmartHomeDemo({ locale, t }: { locale: Locale; t: Labels }) {
                 padding: `${S.u(10)} ${S.u(26)}`,
                 gap: S.u(12),
                 borderRadius: S.u(18),
-                fontSize: `max(10px, ${S.u(40)})`,
+                fontSize: `max(11px, ${S.u(40)})`,
                 background: r.id === selected ? BLUE : "#1b1a19",
               }}
             >
               {roomName(r.id)}
+              <span className={`flex items-center font-normal ${r.id === selected ? "text-white/85" : "text-white/65"}`} style={{ gap: S.u(8) }}>
+                {s.heat && <span className="rounded-full bg-[#ff9f0a]" style={{ width: S.u(12), height: S.u(12), minWidth: 5, minHeight: 5 }} />}
+                {deg(s.heat ? s.target : AMBIENT)}
+              </span>
               {s.music && s.playing && (
                 <span className="demo-eq flex items-end" style={{ height: S.u(26), gap: S.u(4) }}>
                   {[0, 1, 2].map((i) => (
@@ -365,7 +401,7 @@ export function SmartHomeDemo({ locale, t }: { locale: Locale; t: Labels }) {
     const id = selected;
     const size = (n: number): React.CSSProperties => ({ fontSize: S.u(n) });
     const label = (key: keyof Labels["devices"], y: number) =>
-      ownLabels && (
+      (
         <span className="pointer-events-none absolute -translate-y-1/2 whitespace-nowrap leading-none text-white" style={{ left: S.x(2485), top: S.y(y), ...size(44) }}>
           {t.devices[key]}
         </span>
@@ -427,7 +463,7 @@ export function SmartHomeDemo({ locale, t }: { locale: Locale; t: Labels }) {
         {label("music", 906)}
         <span
           className="pointer-events-none absolute -translate-y-1/2 truncate whitespace-nowrap leading-none text-white/50"
-          style={{ left: S.x(ownLabels ? 2700 : 2650), top: S.y(908), maxWidth: S.x(ownLabels ? 190 : 240), ...size(30) }}
+          style={{ left: S.x(2700), top: S.y(908), maxWidth: S.x(190), ...size(30) }}
         >
           {t.state.tracks[track]}
         </span>
@@ -465,7 +501,7 @@ export function SmartHomeDemo({ locale, t }: { locale: Locale; t: Labels }) {
     { id: "motion", x: 1230, area: [1036, 1457] },
   ];
 
-  function cardLayer<T extends string>(size: Size, items: CardItem<T>[], names: Record<T, string>, labelY: number, run: (id: T) => void, active?: T | null) {
+  function cardLayer<T extends string>(size: Size, items: CardItem<T>[], names: Record<T, string>, labelY: number, labelSize: number, run: (id: T) => void, active?: T | null) {
     const C = units(size);
     const top = 10;
     const bottom = 314;
@@ -481,11 +517,9 @@ export function SmartHomeDemo({ locale, t }: { locale: Locale; t: Labels }) {
             className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full transition-shadow duration-300"
             style={{ left: cx, top: at(125), width: C.u(184), height: C.u(184), boxShadow: on ? `0 0 0 ${C.u(6)} #1d1d1f` : undefined }}
           />
-          {ownLabels && (
-            <span aria-hidden="true" className="absolute -translate-x-1/2 -translate-y-1/2 whitespace-nowrap leading-none text-[#1d1d1f]" style={{ left: cx, top: at(labelY), fontSize: C.u(44) }}>
-              {names[b.id]}
-            </span>
-          )}
+          <span aria-hidden="true" className="absolute -translate-x-1/2 -translate-y-1/2 whitespace-nowrap leading-none text-[#1d1d1f]" style={{ left: cx, top: at(labelY), fontSize: `max(13px, ${C.u(labelSize)})` }}>
+            {names[b.id]}
+          </span>
         </button>
       );
     });
@@ -497,15 +531,17 @@ export function SmartHomeDemo({ locale, t }: { locale: Locale; t: Labels }) {
   return (
     <div className="container-wide">
       <div className="relative">
-        <Crop size={STAGE} crop={CROP.full} src={`${BASE}/demo/stage-${lang}`} sizes="(min-width: 1440px) 1400px, 100vw" radius={60} className="hidden lg:block">
+        <Crop size={STAGE} crop={CROP.full} src={`${BASE}/demo/stage`} sizes="(min-width: 1440px) 1400px, 100vw" radius={60} className="hidden lg:block">
           {planLayer()}
           {phoneLayer()}
         </Crop>
         <div className="space-y-3 lg:hidden">
-          <Crop size={STAGE} crop={CROP.plan} src={`${BASE}/demo/stage-${lang}`} sizes="150vw" radius={44}>
-            {planLayer()}
-          </Crop>
-          <Crop size={STAGE} crop={CROP.phone} src={`${BASE}/demo/stage-${lang}`} sizes="1600px" radius={44} className="mx-auto max-w-[420px]">
+          <div ref={planScroller} className="no-scrollbar -mx-[22px] overflow-x-auto px-[22px] md:mx-0 md:px-0">
+            <Crop size={STAGE} crop={CROP.plan} src={`${BASE}/demo/stage`} sizes="2000px" radius={44} className="min-w-[720px]">
+              {planLayer()}
+            </Crop>
+          </div>
+          <Crop size={STAGE} crop={CROP.phone} src={`${BASE}/demo/stage`} sizes="1600px" radius={44} className="mx-auto max-w-[420px]">
             {phoneLayer()}
           </Crop>
         </div>
@@ -572,13 +608,13 @@ export function SmartHomeDemo({ locale, t }: { locale: Locale; t: Labels }) {
 
       <div className="mt-3 grid grid-cols-1 gap-1 md:gap-3 lg:mt-[1.29%] lg:grid-cols-[1591fr_1477fr] lg:gap-[1.35%]">
         <section aria-label={t.scenesTitle} className={scroller}>
-          <Crop size={SCENES} crop={[0, 0, SCENES.w, SCENES.h]} src={`${BASE}/demo/scenes-${lang}`} radius={45} className={`min-w-[600px] ${card}`}>
-            {cardLayer(SCENES, sceneItems, t.scenes, 255, runScene, scene?.id ?? null)}
+          <Crop size={SCENES} crop={[0, 0, SCENES.w, SCENES.h]} src={`${BASE}/demo/scenes`} radius={45} className={`min-w-[600px] ${card}`}>
+            {cardLayer(SCENES, sceneItems, t.scenes, 255, 44, runScene, scene?.id ?? null)}
           </Crop>
         </section>
         <section aria-label={t.eventsTitle} className={scroller}>
-          <Crop size={EVENTS} crop={[0, 0, EVENTS.w, EVENTS.h]} src={`${BASE}/demo/events-${lang}`} radius={45} className={`min-w-[560px] ${card}`}>
-            {cardLayer(EVENTS, eventItems, t.events, 240, trigger)}
+          <Crop size={EVENTS} crop={[0, 0, EVENTS.w, EVENTS.h]} src={`${BASE}/demo/events`} radius={45} className={`min-w-[560px] ${card}`}>
+            {cardLayer(EVENTS, eventItems, t.events, 240, 40, trigger)}
           </Crop>
         </section>
       </div>
