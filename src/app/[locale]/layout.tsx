@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { notFound } from "next/navigation";
+import { Analytics } from "@vercel/analytics/next";
 import { ChatWidget } from "@/components/chat-widget";
 import { CartProvider } from "@/components/cart-provider";
 import { CookieBanner } from "@/components/cookie-banner";
@@ -61,6 +62,7 @@ export default async function LocaleLayout({ children, params }: { children: Rea
           <CookieBanner labels={dict.cookies} policyHref={`/${locale}/legal/cookies`} />
         </CartProvider>
         </SettingsProvider>
+        <Analytics />
       </body>
     </html>
   );
