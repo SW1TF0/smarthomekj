@@ -1,7 +1,7 @@
 import type { Locale } from "@/i18n/config";
 import { faqs as seedFaqs, products as seedProducts } from "@/data/seed";
 
-export const CATEGORIES = ["lighting", "climate", "security", "energy", "entertainment", "hubs"] as const;
+export const CATEGORIES = ["lighting", "climate", "security", "energy", "entertainment", "cleaning", "hubs"] as const;
 
 export type ProductText = { name: string; tagline: string; description: string; specs: string[] };
 export type ProductTranslations = Partial<Record<Locale, ProductText>>;

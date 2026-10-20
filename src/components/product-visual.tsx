@@ -7,6 +7,7 @@ export const categoryTheme: Record<string, { bg: string; glow: string; device: s
   security: { bg: "from-[#f5f5f7] to-[#ececf0]", glow: "rgba(100,116,139,0.45)", device: "from-zinc-800 to-black", icon: "text-white" },
   energy: { bg: "from-[#f5f5f7] to-[#ececf0]", glow: "rgba(52,211,153,0.5)", device: "from-white to-emerald-50", icon: "text-emerald-500" },
   entertainment: { bg: "from-[#f5f5f7] to-[#ececf0]", glow: "rgba(192,132,252,0.5)", device: "from-zinc-700 to-zinc-900", icon: "text-fuchsia-300" },
+  cleaning: { bg: "from-[#f5f5f7] to-[#ececf0]", glow: "rgba(45,212,191,0.5)", device: "from-white to-teal-50", icon: "text-teal-500" },
   hubs: { bg: "from-[#f5f5f7] to-[#ececf0]", glow: "rgba(99,102,241,0.45)", device: "from-white to-indigo-50", icon: "text-indigo-500" },
 };
 
@@ -27,7 +28,7 @@ export function ProductVisual({
   const theme = categoryTheme[category] ?? categoryTheme.hubs;
   const device = { sm: "w-16 h-16", md: "w-32 h-32", lg: "w-52 h-52 md:w-64 md:h-64" }[size];
   const icon = { sm: 22, md: 44, lg: 84 }[size];
-  const round = category === "climate" || category === "hubs" || category === "lighting" ? "rounded-full" : "rounded-[30%]";
+  const round = category === "climate" || category === "cleaning" || category === "hubs" || category === "lighting" ? "rounded-full" : "rounded-[30%]";
 
   return (
     <div className={`relative flex items-center justify-center bg-gradient-to-br ${theme.bg} overflow-hidden ${className}`}>

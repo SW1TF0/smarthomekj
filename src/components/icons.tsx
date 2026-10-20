@@ -109,6 +109,13 @@ export const categoryIcons: Record<string, (p: IconProps) => React.ReactElement>
       <circle cx="12" cy="6.5" r="1" />
     </Svg>
   ),
+  cleaning: (p) => (
+    <Svg {...p}>
+      <circle cx="12" cy="12" r="8.5" />
+      <circle cx="12" cy="12" r="2.5" />
+      <path d="M7 8.5h3M14 8.5h3" />
+    </Svg>
+  ),
   hubs: (p) => (
     <Svg {...p}>
       <circle cx="12" cy="12" r="3" />
