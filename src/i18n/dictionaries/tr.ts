@@ -166,6 +166,7 @@ const tr: Dictionary = {
       security: "Güvenlik",
       energy: "Enerji",
       entertainment: "Ses",
+      cleaning: "Temizlik",
       hubs: "Merkezler ve Kontrol",
     },
     empty: "Bu kategoride henüz ürün yok.",

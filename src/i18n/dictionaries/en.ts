@@ -164,6 +164,7 @@ const en = {
       security: "Security",
       energy: "Energy",
       entertainment: "Audio",
+      cleaning: "Cleaning",
       hubs: "Hubs & Control",
     } as Record<string, string>,
     empty: "No products in this category yet.",

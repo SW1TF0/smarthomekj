@@ -166,6 +166,7 @@ const bg: Dictionary = {
       security: "Сигурност",
       energy: "Енергия",
       entertainment: "Аудио",
+      cleaning: "Почистване",
       hubs: "Контролери",
     },
     empty: "Все още няма продукти в тази категория.",
