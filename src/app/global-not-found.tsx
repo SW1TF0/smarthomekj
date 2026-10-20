@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
+import { siteIcons } from "@/lib/seo";
 import "./globals.css";
 
 const base = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
-export const metadata: Metadata = { title: "404 · SmartHomeKJ", robots: { index: false } };
+export const metadata: Metadata = { title: "404 · SmartHomeKJ", robots: { index: false }, icons: siteIcons };
 
 export default function GlobalNotFound() {
   return (

@@ -8,7 +8,7 @@ import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { htmlLang, isLocale, locales } from "@/i18n/config";
 import { getDictionary } from "@/i18n";
-import { basePath, pageMetadata, siteUrl } from "@/lib/seo";
+import { manifestUrl, pageMetadata, siteIcons, siteUrl } from "@/lib/seo";
 import { SettingsProvider } from "@/lib/store";
 import "../globals.css";
 
@@ -35,7 +35,8 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
     openGraph: defaults.openGraph,
     twitter: defaults.twitter,
     applicationName: "SmartHomeKJ",
-    icons: { icon: `${basePath}/icon.svg` },
+    icons: siteIcons,
+    manifest: manifestUrl,
   };
 }
 

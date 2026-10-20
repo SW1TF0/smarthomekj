@@ -64,3 +64,13 @@ export function pageMetadata({ locale, path = "", title, description, absoluteTi
 
 /** Pages that should not show up in search results (cart, checkout, forms). */
 export const noIndex: Metadata["robots"] = { index: false, follow: true };
+
+/** Favicon, app and home-screen icons, shared by every layout. */
+export const siteIcons = {
+  icon: [
+    { url: `${basePath}/favicon.ico`, sizes: "48x48" },
+    { url: `${basePath}/icon.svg`, type: "image/svg+xml" },
+  ],
+  apple: `${basePath}/apple-touch-icon.png`,
+};
+export const manifestUrl = `${basePath}/manifest.webmanifest`;
