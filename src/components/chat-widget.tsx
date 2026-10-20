@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import type { Locale } from "@/i18n/config";
 import { faqAnswer, postChatMessage, requestHuman, startChat, useSettings, watchChat, type ChatMode, type ChatRole } from "@/lib/store";
@@ -41,6 +42,8 @@ export function ChatWidget({
 }) {
   const settings = useSettings();
   const botName = settings.chatBotName;
+  // On phones the floating button would cover the order form and totals.
+  const onCheckout = /\/(cart|checkout)\/?$/.test(usePathname());
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [pending, setPending] = useState<Message[]>([]);
@@ -138,7 +141,7 @@ export function ChatWidget({
         aria-expanded={open}
         aria-controls="support-chat"
         aria-label={open ? labels.title : labels.open}
-        className="fixed bottom-5 right-5 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-ink text-white shadow-[0_12px_40px_rgba(0,0,0,0.3)] transition-transform duration-300 hover:scale-105 active:scale-95"
+        className={`fixed bottom-[max(16px,env(safe-area-inset-bottom))] right-4 z-50 h-12 w-12 items-center justify-center rounded-full bg-ink text-white shadow-[0_12px_40px_rgba(0,0,0,0.3)] transition-transform duration-300 hover:scale-105 active:scale-95 sm:bottom-5 sm:right-5 sm:h-14 sm:w-14 ${onCheckout && !open ? "hidden md:flex" : "flex"}`}
       >
         {!open && <span className="pulse-ring absolute inset-0 rounded-full bg-accent/40" aria-hidden="true" />}
         {open ? <CloseIcon size={22} /> : <ChatIcon size={22} />}

@@ -147,7 +147,7 @@ export function CheckoutForm({ locale, labels }: { locale: Locale; labels: Label
 
   return (
     <form
-      className="grid gap-12 lg:grid-cols-[1fr_400px]"
+      className="grid grid-cols-[minmax(0,1fr)] gap-12 lg:grid-cols-[minmax(0,1fr)_400px]"
       onSubmit={(e) => {
         e.preventDefault();
         submit(e.currentTarget);
@@ -207,7 +207,7 @@ export function CheckoutForm({ locale, labels }: { locale: Locale; labels: Label
         </fieldset>
       </div>
 
-      <aside className="h-fit rounded-[24px] bg-cloud p-8 lg:sticky lg:top-20">
+      <aside className="h-fit rounded-[24px] bg-cloud p-5 sm:p-8 lg:sticky lg:top-20">
         <h2 className="text-[21px] font-semibold tracking-tight">{c.summary}</h2>
         <ul className="mt-5 space-y-4">
           {items.map((i) => (
@@ -263,7 +263,7 @@ export function CheckoutForm({ locale, labels }: { locale: Locale; labels: Label
         )}
 
         {/* Button wording required by Directive 2011/83/EU art. 8(2). */}
-        <button type="submit" className="btn btn-primary mt-6 w-full !py-4" disabled={pending || !ready}>
+        <button type="submit" className="btn btn-primary mt-6 w-full !whitespace-normal !py-4 text-center" disabled={pending || !ready}>
           {pending ? c.processing : c.submit}
         </button>
       </aside>
