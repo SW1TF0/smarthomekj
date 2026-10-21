@@ -271,7 +271,7 @@ export function Calculator({ locale, t, form }: { locale: Locale; t: Labels; for
 
           {/* 3. Systems */}
           <Step n={3} title={t.steps.systems}>
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="grid grid-cols-2 gap-3 xl:grid-cols-3">
               {SYSTEMS.map((s) => {
                 const on = cfg.systems.includes(s);
                 const { icon: Icon, tint } = systemIcons[s];
@@ -282,7 +282,7 @@ export function Calculator({ locale, t, form }: { locale: Locale; t: Labels; for
                     type="button"
                     aria-pressed={on}
                     onClick={() => toggleSystem(s)}
-                    className={`group relative flex min-h-[132px] flex-col justify-between rounded-[20px] p-5 text-left transition-[box-shadow,background-color] ${on ? "bg-white ring-2 ring-accent" : "bg-white ring-1 ring-line hover:ring-ink/30"}`}
+                    className={`group relative flex flex-col justify-between rounded-[20px] p-4 text-left sm:min-h-[132px] sm:p-5 transition-[box-shadow,background-color] ${on ? "bg-white ring-2 ring-accent" : "bg-white ring-1 ring-line hover:ring-ink/30"}`}
                   >
                     <span className="flex items-start justify-between gap-3">
                       <span className={`flex h-10 w-10 items-center justify-center rounded-full text-white transition-colors ${on ? tint : "bg-[#d2d2d7]"}`}>
@@ -295,9 +295,9 @@ export function Calculator({ locale, t, form }: { locale: Locale; t: Labels; for
                         <CheckIcon size={15} strokeWidth={2.4} />
                       </span>
                     </span>
-                    <span className="mt-4 leading-tight">
-                      <span className="block text-[17px] font-semibold">{t.systems[s].title}</span>
-                      <span className="mt-1 block text-[14px] text-mute">{t.systems[s].text}</span>
+                    <span className="mt-3 leading-tight sm:mt-4">
+                      <span className="block text-[15px] font-semibold sm:text-[17px]">{t.systems[s].title}</span>
+                      <span className="mt-1 hidden text-[14px] text-mute sm:block">{t.systems[s].text}</span>
                       {cost > 0 && <span className="price mt-2 block text-[13px] font-medium text-ink-2">{fill(t.from, { price: euros(cost, locale) })}</span>}
                     </span>
                   </button>

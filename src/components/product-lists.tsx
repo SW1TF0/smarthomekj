@@ -16,9 +16,9 @@ type Props = { locale: Locale; dict: Dictionary };
 export function FeaturedProducts({ locale, dict }: Props) {
   const { products } = useProducts(locale, { featured: true });
   return (
-    <div className="mt-14 grid gap-4 md:grid-cols-3">
+    <div className="mt-10 grid grid-cols-2 gap-3 md:mt-14 md:grid-cols-3 md:gap-4">
       {products.slice(0, 3).map((p, i) => (
-        <Reveal key={p.id} delay={i * 80}>
+        <Reveal key={p.id} delay={i * 80} className={i === 2 ? "max-md:hidden" : ""}>
           <ProductCard product={p} locale={locale} dict={dict} />
         </Reveal>
       ))}
@@ -62,7 +62,7 @@ function ShopCatalogue({ locale, dict }: Props) {
       {products.length === 0 && !loading ? (
         <p className="py-24 text-center text-mute">{dict.shop.empty}</p>
       ) : (
-        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="mt-8 grid grid-cols-2 gap-3 sm:mt-10 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
           {products.map((p) => (
             <ProductCard key={p.id} product={p} locale={locale} dict={dict} />
           ))}

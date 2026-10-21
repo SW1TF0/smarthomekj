@@ -45,9 +45,9 @@ export function SiteFooter({ locale, dict }: { locale: Locale; dict: Dictionary 
 
   return (
     <footer className="bg-cloud text-[12px] text-mute">
-      <div className="container-apple py-12">
-        <div className="grid gap-10 border-b border-line pb-10 md:grid-cols-4">
-          <div>
+      <div className="container-apple py-10 md:py-12">
+        <div className="grid grid-cols-2 gap-x-6 gap-y-8 border-b border-line pb-8 md:grid-cols-4 md:gap-10 md:pb-10">
+          <div className="col-span-2 md:col-span-1">
             <Link href={l("")} className="flex items-center gap-2 text-[15px] font-semibold text-ink">
               <LogoMark />
               SmartHomeKJ

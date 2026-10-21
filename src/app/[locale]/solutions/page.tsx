@@ -28,10 +28,10 @@ export default async function SolutionsPage({ params }: LocaleParams) {
         {s.items.map((item, i) => (
           <Reveal key={item.key}>
             <section id={item.key} className="tile grid scroll-mt-20 items-center gap-0 bg-cloud md:grid-cols-2">
-              <div className={`p-10 md:p-16 ${i % 2 ? "md:order-2" : ""}`}>
+              <div className={`p-7 md:p-16 ${i % 2 ? "md:order-2" : ""}`}>
                 <p className="text-[17px] font-semibold text-[#bf4800]">{item.title}</p>
                 <h2 className="headline-lg mt-2">{item.lead}</h2>
-                <ul className="mt-8 space-y-3">
+                <ul className="mt-6 space-y-2.5 md:mt-8 md:space-y-3">
                   {item.bullets.map((b) => (
                     <li key={b} className="flex items-start gap-3 text-[17px] text-ink-2">
                       <CheckIcon size={20} className="mt-0.5 shrink-0 text-success" />
@@ -39,7 +39,7 @@ export default async function SolutionsPage({ params }: LocaleParams) {
                     </li>
                   ))}
                 </ul>
-                <div className="mt-10 flex flex-wrap gap-4">
+                <div className="mt-7 flex flex-wrap gap-4 md:mt-10">
                   <Link href={`/${locale}/contact?service=${item.key}`} className="btn btn-primary">
                     {dict.nav.consultation}
                   </Link>
@@ -48,7 +48,7 @@ export default async function SolutionsPage({ params }: LocaleParams) {
                   </Link>
                 </div>
               </div>
-              <ProductVisual category={item.key} alt={item.title} size="lg" className={`aspect-square h-full md:aspect-auto md:min-h-[560px] ${i % 2 ? "md:order-1" : ""}`} />
+              <ProductVisual category={item.key} alt={item.title} size="lg" className={`hidden h-full md:flex md:min-h-[560px] ${i % 2 ? "md:order-1" : ""}`} />
             </section>
           </Reveal>
         ))}
