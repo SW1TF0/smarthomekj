@@ -46,7 +46,7 @@ export function CartView({ locale, labels }: { locale: Locale; labels: Labels })
   }
 
   return (
-    <div className="grid gap-12 lg:grid-cols-[1fr_380px]">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-12 lg:grid-cols-[minmax(0,1fr)_380px]">
       <ul className="divide-y divide-line border-y border-line">
         {items.map((item) => (
           <li key={item.productId} className="flex gap-5 py-6">
@@ -85,7 +85,7 @@ export function CartView({ locale, labels }: { locale: Locale; labels: Labels })
         ))}
       </ul>
 
-      <aside className="h-fit rounded-[24px] bg-cloud p-8 lg:sticky lg:top-20">
+      <aside className="h-fit rounded-[24px] bg-cloud p-5 sm:p-8 lg:sticky lg:top-20">
         <dl className="space-y-3 text-[17px]">
           <div className="flex justify-between">
             <dt>{labels.subtotal}</dt>
@@ -104,7 +104,7 @@ export function CartView({ locale, labels }: { locale: Locale; labels: Labels })
           </div>
           <p className="text-right text-[13px] text-mute">{labels.vatIncluded.replace("{amount}", money(vatFromGross(total)))}</p>
         </dl>
-        <Link href={`/${locale}/checkout`} className="btn btn-primary mt-6 w-full !py-4">
+        <Link href={`/${locale}/checkout`} className="btn btn-primary mt-6 w-full !whitespace-normal !py-4 text-center">
           {labels.checkout}
         </Link>
       </aside>
