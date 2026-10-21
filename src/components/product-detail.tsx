@@ -147,7 +147,7 @@ export function ProductDetail({ slug: fixedSlug, locale, dict }: { slug?: string
         <section className="bg-cloud py-20">
           <div className="container-wide">
             <h2 className="headline-md">{dict.shop.related}</h2>
-            <div className="mt-8 grid gap-4 md:grid-cols-3">
+            <div className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
               {related.map((p) => (
                 <ProductCard key={p.id} product={p} locale={locale} dict={dict} />
               ))}

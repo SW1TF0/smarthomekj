@@ -33,7 +33,7 @@ export function ProductVisual({
   return (
     <div className={`relative flex items-center justify-center bg-gradient-to-br ${theme.bg} overflow-hidden ${className}`}>
       {imageUrl ? (
-        <Image src={imageUrl} alt={alt} fill className="object-contain p-8" sizes="(max-width: 768px) 100vw, 50vw" />
+        <Image src={imageUrl} alt={alt} fill className="object-contain p-4 sm:p-8" sizes="(max-width: 640px) 50vw, (max-width: 768px) 100vw, 50vw" />
       ) : (
         <>
           <div
