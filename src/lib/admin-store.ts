@@ -32,6 +32,7 @@ import { useEffect, useState } from "react";
 import { firebaseAuth, firestore, secondaryAuth } from "./firebase";
 import { starterFaqs, starterProducts, type FaqDoc, type ProductDoc } from "./products";
 import { defaultSettings, type SiteSettings } from "./settings";
+import type { CalcSetup } from "./calculator";
 import type { Permission } from "./permissions";
 import type { OrderDoc } from "./store";
 
@@ -329,7 +330,11 @@ export async function getAdminSettings(): Promise<SiteSettings> {
   return { ...defaultSettings, ...(snap.data() as Partial<SiteSettings> | undefined) };
 }
 
-export const saveSettings = (s: SiteSettings) => setDoc(doc(db(), "config", "settings"), s);
+/** Saves the fields the settings page edits; anything else in the document (e.g. the calculator setup) is kept. */
+export const saveSettings = (s: Partial<SiteSettings>) => setDoc(doc(db(), "config", "settings"), s, { merge: true });
+
+/** Replaces the whole calculator setup and nothing else. */
+export const saveCalculator = (calculator: CalcSetup) => setDoc(doc(db(), "config", "settings"), { calculator }, { mergeFields: ["calculator"] });
 
 // ---------- Team ----------
 

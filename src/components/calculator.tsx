@@ -11,21 +11,21 @@ import {
   parseConfig,
   PROPERTY_TYPES,
   QTY_MAX,
-  ratesFrom,
   ROOMS_MAX,
   ROOMS_MIN,
   serializeConfig,
   serviceFor,
-  SYSTEMS,
+  setupFrom,
   systemCost,
+  systemTitle,
+  isBuiltin,
   type CalcConfig,
   type CatalogueItem,
   type Line,
   type PropertyType,
-  type SystemKey,
 } from "@/lib/calculator";
 import { formatMoney } from "@/lib/money";
-import { localizeProduct, productHref, starterProducts } from "@/lib/products";
+import { productHref } from "@/lib/products";
 import { useProducts, useSettings } from "@/lib/store";
 import { ActionForm, Field, LinkedText } from "./action-form";
 import { useCart } from "./cart-provider";
@@ -58,7 +58,7 @@ type FormLabels = {
 
 const typeIcons: Record<PropertyType, typeof HouseIcon> = { apartment: BuildingIcon, house: HouseIcon, office: OfficeIcon };
 
-const systemIcons: Record<SystemKey, { icon: (p: { size?: number }) => React.ReactElement; tint: string }> = {
+const systemIcons: Record<string, { icon: (p: { size?: number }) => React.ReactElement; tint: string }> = {
   lighting: { icon: (p) => <CategoryIcon category="lighting" {...p} />, tint: "bg-[#ffcc00]" },
   access: { icon: (p) => <LockIcon {...p} />, tint: "bg-[#0071e3]" },
   cameras: { icon: (p) => <CameraIcon {...p} />, tint: "bg-[#30b14c]" },
@@ -68,6 +68,11 @@ const systemIcons: Record<SystemKey, { icon: (p: { size?: number }) => React.Rea
   network: { icon: (p) => <WifiIcon {...p} />, tint: "bg-[#64748b]" },
   sound: { icon: (p) => <CategoryIcon category="entertainment" {...p} />, tint: "bg-[#af52de]" },
   energy: { icon: (p) => <CategoryIcon category="energy" {...p} />, tint: "bg-[#34c759]" },
+  climate: { icon: (p) => <CategoryIcon category="climate" {...p} />, tint: "bg-[#ff9500]" },
+  security: { icon: (p) => <CategoryIcon category="security" {...p} />, tint: "bg-[#5e5ce6]" },
+  cleaning: { icon: (p) => <CategoryIcon category="cleaning" {...p} />, tint: "bg-[#00c7be]" },
+  entertainment: { icon: (p) => <CategoryIcon category="entertainment" {...p} />, tint: "bg-[#af52de]" },
+  hubs: { icon: (p) => <CategoryIcon category="hubs" {...p} />, tint: "bg-[#64748b]" },
 };
 
 const fill = (template: string, values: Record<string, string | number>) =>
@@ -110,31 +115,33 @@ export function Calculator({ locale, t, form }: { locale: Locale; t: Labels; for
     return () => io.disconnect();
   }, []);
 
-  // Live shop prices; products the shop no longer lists fall back to the starter catalogue for the estimate only.
+  // Only what the shop sells right now, at its live prices. A product taken off the shop drops out of the estimate.
   const catalogue = useMemo(() => {
     const map = new Map<string, CatalogueItem>();
-    for (const p of starterProducts) {
-      const v = localizeProduct(p, locale);
-      map.set(v.slug, { name: v.name, category: v.category, imageUrl: v.imageUrl, priceCents: v.priceCents, stock: 0, available: false });
-    }
-    if (!loading) {
-      for (const p of products) {
-        map.set(p.slug, { name: p.name, category: p.category, imageUrl: p.imageUrl, priceCents: p.priceCents, stock: p.stock, available: true });
-      }
+    for (const p of products) {
+      map.set(p.slug, { name: p.name, category: p.category, imageUrl: p.imageUrl, priceCents: p.priceCents, stock: p.stock, available: true });
     }
     return map;
-  }, [products, loading, locale]);
+  }, [products]);
 
-  const rates = ratesFrom(settings);
-  const est = useMemo(() => estimate(cfg, catalogue, rates), [cfg, catalogue, rates.base, rates.pair, rates.wall, rates.mount, rates.pro]); // eslint-disable-line react-hooks/exhaustive-deps
+  // What each system adds and what installing it costs, as set in Admin → Калкулатор.
+  const setup = useMemo(() => setupFrom(settings), [settings]);
+  // A system shows only when it is switched on and the shop sells at least one of its products.
+  const systems = setup.systems.filter((s) => s.enabled && s.items.some((i) => catalogue.has(i.slug)));
+  const title = (key: string) => {
+    const sys = setup.systems.find((s) => s.key === key);
+    return sys ? systemTitle(sys, locale, t.systems) : key;
+  };
+  const est = useMemo(() => estimate(cfg, setup, catalogue), [cfg, setup, catalogue]);
   const active = est.lines.filter((l) => l.qty > 0);
-  const hasSystems = cfg.systems.length > 0 && active.length > 0;
+  const chosen = systems.filter((s) => cfg.systems.includes(s.key)).map((s) => s.key);
+  const hasSystems = chosen.length > 0 && active.length > 0;
 
   const update = (patch: Partial<CalcConfig>) => setCfg((c) => ({ ...c, ...patch }));
   // Changing the home recalculates every quantity, so hand-made changes start over.
   const setHome = (patch: Partial<Pick<CalcConfig, "type" | "rooms" | "floors">>) => setCfg((c) => ({ ...c, ...patch, qty: {} }));
-  const toggleSystem = (s: SystemKey) =>
-    setCfg((c) => ({ ...c, systems: c.systems.includes(s) ? c.systems.filter((x) => x !== s) : SYSTEMS.filter((x) => x === s || c.systems.includes(x)) }));
+  const toggleSystem = (s: string) =>
+    setCfg((c) => ({ ...c, systems: c.systems.includes(s) ? c.systems.filter((x) => x !== s) : [...c.systems, s] }));
   const setQty = (line: Line, qty: number) =>
     setCfg((c) => {
       const next = { ...c.qty };
@@ -182,7 +189,7 @@ export function Calculator({ locale, t, form }: { locale: Locale; t: Labels; for
     const text = [
       `[${m.header}]`,
       `${m.home}: ${home}`,
-      `${m.systems}: ${cfg.systems.map((s) => t.systems[s].title).join(", ") || "—"}`,
+      `${m.systems}: ${chosen.map(title).join(", ") || "—"}`,
       `${m.install}: ${cfg.install ? t.install.pro.title : t.install.diy.title}`,
       `${m.price}: ${priceText} (${t.summary.vat})`,
       `${m.devices}:`,
@@ -190,9 +197,9 @@ export function Calculator({ locale, t, form }: { locale: Locale; t: Labels; for
       `${m.link}: ${typeof window === "undefined" ? "" : `${window.location.origin}${window.location.pathname}?${serializeConfig(cfg)}`}`,
     ].join("\n");
     return text.slice(0, 3800);
-  }, [active, cfg, priceText, roomsLabel, t, typeLabel, locale]);
+  }, [active, cfg, chosen, priceText, roomsLabel, t, typeLabel, locale]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const groups = [...SYSTEMS.filter((s) => cfg.systems.includes(s)), "required" as const]
+  const groups = [...chosen, "required"]
     .map((g) => ({ key: g, lines: est.lines.filter((l) => l.system === g) }))
     .filter((g) => g.lines.length);
 
@@ -272,10 +279,12 @@ export function Calculator({ locale, t, form }: { locale: Locale; t: Labels; for
           {/* 3. Systems */}
           <Step n={3} title={t.steps.systems}>
             <div className="grid grid-cols-2 gap-3 xl:grid-cols-3">
-              {SYSTEMS.map((s) => {
+              {systems.map((sys) => {
+                const s = sys.key;
                 const on = cfg.systems.includes(s);
-                const { icon: Icon, tint } = systemIcons[s];
-                const cost = systemCost(s, cfg, catalogue, rates);
+                const { icon: Icon, tint } = systemIcons[sys.icon] ?? systemIcons.hubs;
+                const cost = systemCost(s, cfg, setup, catalogue);
+                const text = isBuiltin(s) && !sys.names.bg ? t.systems[s].text : "";
                 return (
                   <button
                     key={s}
@@ -296,8 +305,8 @@ export function Calculator({ locale, t, form }: { locale: Locale; t: Labels; for
                       </span>
                     </span>
                     <span className="mt-3 leading-tight sm:mt-4">
-                      <span className="block text-[15px] font-semibold sm:text-[17px]">{t.systems[s].title}</span>
-                      <span className="mt-1 hidden text-[14px] text-mute sm:block">{t.systems[s].text}</span>
+                      <span className="block text-[15px] font-semibold sm:text-[17px]">{systemTitle(sys, locale, t.systems)}</span>
+                      {text && <span className="mt-1 hidden text-[14px] text-mute sm:block">{text}</span>}
                       {cost > 0 && <span className="price mt-2 block text-[13px] font-medium text-ink-2">{fill(t.from, { price: euros(cost, locale) })}</span>}
                     </span>
                   </button>
@@ -347,7 +356,7 @@ export function Calculator({ locale, t, form }: { locale: Locale; t: Labels; for
                   <div id="calc-list" className="mt-6 space-y-8">
                     {groups.map((g) => (
                       <div key={g.key}>
-                        <h3 className="text-[15px] font-semibold">{g.key === "required" ? t.list.required : t.systems[g.key].title}</h3>
+                        <h3 className="text-[15px] font-semibold">{g.key === "required" ? t.list.required : title(g.key)}</h3>
                         {g.key === "required" && <p className="mt-0.5 text-[13px] text-mute">{t.list.requiredText}</p>}
                         <ul className="mt-3 divide-y divide-line/70 rounded-[18px] bg-white ring-1 ring-line">
                           {g.lines.map((l) => (
@@ -393,7 +402,7 @@ export function Calculator({ locale, t, form }: { locale: Locale; t: Labels; for
               {priceText}
             </p>
             <ul className="mt-4 flex flex-wrap gap-2 text-[13px]">
-              {[typeLabel, roomsLabel, ...(cfg.type === "house" && cfg.floors > 1 ? [fill(t.summary.floors, { n: cfg.floors })] : []), ...cfg.systems.map((s) => t.systems[s].title)].map((chip) => (
+              {[typeLabel, roomsLabel, ...(cfg.type === "house" && cfg.floors > 1 ? [fill(t.summary.floors, { n: cfg.floors })] : []), ...chosen.map(title)].map((chip) => (
                 <li key={chip} className="rounded-full bg-white/10 px-3 py-1.5">
                   {chip}
                 </li>
@@ -467,7 +476,7 @@ export function Calculator({ locale, t, form }: { locale: Locale; t: Labels; for
                 errorText={form.error}
                 invalidText={form.invalid}
               >
-                <input type="hidden" name="service" value={serviceFor(cfg.systems)} />
+                <input type="hidden" name="service" value={serviceFor(chosen)} />
                 <input type="hidden" name="propertyType" value={cfg.type} />
                 <input type="hidden" name="message" value={message} />
                 <div className="grid gap-5 sm:grid-cols-2">

@@ -49,17 +49,6 @@ const groups: { title: string; hint?: string; fields: FieldDef[] }[] = [
     ],
   },
   {
-    title: "Калкулатор: цени за монтаж (с ДДС)",
-    hint: "Калкулаторът на сайта смята устройствата по цените в магазина, а монтажа по тези цени за брой. Горната граница на диапазона е с 25% повече за монтажа.",
-    fields: [
-      { key: "installBaseCents", label: "Посещение, настройка на приложението и обучение (веднъж) (€)", type: "money" },
-      { key: "installPairCents", label: "Лесно устройство: лампа, сензор, контакт, колона, рутер (€)", type: "money" },
-      { key: "installWallCents", label: "Модул в конзола: умен ключ, щори (€)", type: "money" },
-      { key: "installMountCents", label: "Камера (€)", type: "money" },
-      { key: "installProCents", label: "Брава, видеозвънец, термостат, измерване в таблото (€)", type: "money" },
-    ],
-  },
-  {
     title: "Чат за поддръжка",
     hint: "Ботът отговаря от „Въпроси и отговори“. Когато не знае отговора, дава вашия имейл и телефон или предлага човек от екипа.",
     fields: [
@@ -68,16 +57,18 @@ const groups: { title: string; hint?: string; fields: FieldDef[] }[] = [
   },
 ];
 
-function read(f: FormData): SiteSettings {
-  const values = { ...defaultSettings } as Record<string, unknown>;
-  for (const [key, def] of Object.entries(defaultSettings)) {
+/** Only the fields shown on this page; the rest of the settings document is left as it is. */
+function read(f: FormData): Partial<SiteSettings> {
+  const values: Record<string, unknown> = {};
+  for (const key of groups.flatMap((g) => g.fields.map((x) => x.key))) {
+    const def = defaultSettings[key];
     if (typeof def === "boolean") values[key] = f.get(key) === "on";
     else if (typeof def === "number") {
       const cents = euroToCents(str(f, key) || "0");
       values[key] = Number.isFinite(cents) ? cents : def;
     } else values[key] = str(f, key);
   }
-  return values as SiteSettings;
+  return values as Partial<SiteSettings>;
 }
 
 export default function SettingsPage() {

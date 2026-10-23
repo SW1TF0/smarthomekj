@@ -1,29 +1,57 @@
+import type { Locale } from "@/i18n/config";
 import type { SiteSettings } from "./settings";
 
 // Price calculator: turns "what kind of home, how many rooms, which systems" into a device list
-// priced from the live shop catalogue, plus installation at the rates set in Admin → Settings.
+// priced from the live shop catalogue, plus installation. Which products each system adds, how many,
+// and what installing them costs is set by the owner in Admin → Калкулатор (stored as settings.calculator).
 
 export const PROPERTY_TYPES = ["apartment", "house", "office"] as const;
 export type PropertyType = (typeof PROPERTY_TYPES)[number];
 
-export const SYSTEMS = ["lighting", "access", "cameras", "heating", "blinds", "sensors", "network", "sound", "energy"] as const;
-export type SystemKey = (typeof SYSTEMS)[number];
+/** Systems with ready-made names and descriptions in every language. The owner can add more. */
+export const BUILTIN_SYSTEMS = ["lighting", "access", "cameras", "heating", "blinds", "sensors", "network", "sound", "energy"] as const;
+export type BuiltinSystem = (typeof BUILTIN_SYSTEMS)[number];
+export const isBuiltin = (key: string): key is BuiltinSystem => (BUILTIN_SYSTEMS as readonly string[]).includes(key);
 
-/** How much work one unit takes to install. Each class has its own rate in the settings. */
-export type InstallClass = "pair" | "wall" | "mount" | "pro";
+/** Icons a system card can show: the built-in system icons plus a few shop categories. */
+export const SYSTEM_ICONS = [...BUILTIN_SYSTEMS, "climate", "security", "cleaning", "entertainment", "hubs"] as const;
 
 export const ROOMS_MIN = 1;
 export const ROOMS_MAX = 20;
 export const FLOORS_MAX = 4;
 export const QTY_MAX = 50;
-/** Installation can cost more than the base estimate when wiring or walls need extra work. */
-export const INSTALL_SPREAD = 1.25;
+
+/**
+ * How many pieces a product adds for one kind of home.
+ * home: n in total · room: n per room · floor: n per floor · rooms: 1 for every n rooms (rounded up).
+ * n = 0 still lists the product so the visitor can add it.
+ */
+export type QtyPer = "home" | "room" | "floor" | "rooms";
+export type QtyRule = { n: number; per: QtyPer };
+export type CalcItem = { slug: string; installCents: number; qty: Record<PropertyType, QtyRule>; /** Controller it cannot work without, or "". */ hub: string };
+export type CalcSystem = {
+  key: string;
+  enabled: boolean;
+  /** Custom name per language; empty uses the built-in name (other languages fall back to Bulgarian). */
+  names: Record<Locale, string>;
+  icon: string;
+  items: CalcItem[];
+};
+export type CalcHub = { slug: string; installCents: number };
+export type CalcSetup = {
+  /** Visit, app set-up and training, charged once when anything is installed. */
+  baseCents: number;
+  /** The top of the price range is this many percent above the installation estimate. */
+  spreadPercent: number;
+  systems: CalcSystem[];
+  hubs: CalcHub[];
+};
 
 export type CalcConfig = {
   type: PropertyType;
   rooms: number;
   floors: number;
-  systems: SystemKey[];
+  systems: string[];
   install: boolean;
   /** Quantities the visitor changed by hand, keyed "system.slug". */
   qty: Record<string, number>;
@@ -32,101 +60,154 @@ export type CalcConfig = {
 export const defaultConfig: CalcConfig = { type: "apartment", rooms: 3, floors: 1, systems: ["lighting", "sensors"], install: true, qty: {} };
 
 type Home = Pick<CalcConfig, "type" | "rooms" | "floors">;
-type Rule = { slug: string; install: InstallClass; qty: (h: Home) => number };
 
-const per = (n: number, size: number) => Math.ceil(n / size);
+const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, Math.round(n)));
 
-/** The default kit for each system. A rule that returns 0 is still listed so the visitor can add it. */
-export const RULES: Record<SystemKey, Rule[]> = {
-  lighting: [
-    { slug: "shelly-1pm-gen4", install: "wall", qty: (h) => h.rooms },
-    { slug: "philips-hue-color-e27-2-pack", install: "pair", qty: (h) => (h.type === "office" ? 0 : 1) },
-    { slug: "aqara-presence-sensor-fp2", install: "pair", qty: () => 0 },
-  ],
-  access: [
-    { slug: "aqara-smart-lock-u200-kit", install: "pro", qty: () => 1 },
-    { slug: "aqara-video-doorbell-g4", install: "pro", qty: () => 1 },
-  ],
-  cameras: [
-    { slug: "tapo-c200", install: "mount", qty: (h) => (h.type === "house" ? h.floors : h.type === "office" ? per(h.rooms, 3) : h.rooms >= 4 ? 2 : 1) },
-    { slug: "tapo-c320ws", install: "mount", qty: (h) => (h.type === "house" ? 2 : h.type === "office" ? 1 : 0) },
-  ],
-  heating: [
-    { slug: "netatmo-smart-thermostat", install: "pro", qty: (h) => (h.type === "house" ? h.floors : 1) },
-    { slug: "aqara-door-window-sensor-p2", install: "pair", qty: () => 0 },
-  ],
-  blinds: [{ slug: "shelly-2pm-gen3", install: "wall", qty: (h) => h.rooms }],
-  sensors: [
-    { slug: "aqara-water-leak-sensor", install: "pair", qty: (h) => (h.type === "house" ? 1 + h.floors : h.rooms >= 4 ? 3 : 2) },
-    { slug: "aqara-motion-sensor-p2", install: "pair", qty: (h) => per(h.rooms, 2) },
-    { slug: "aqara-door-window-sensor-p2", install: "pair", qty: (h) => (h.type === "house" ? 3 : h.type === "office" ? 2 : 1) },
-    { slug: "shelly-plus-smoke", install: "pair", qty: (h) => (h.type === "house" ? h.floors + 1 : per(h.rooms, 3)) },
-  ],
-  network: [{ slug: "tp-link-deco-be25-2-pack", install: "pair", qty: (h) => (h.type === "house" ? h.floors : per(h.rooms, h.type === "office" ? 4 : 5)) }],
-  sound: [
-    { slug: "sonos-era-100", install: "pair", qty: (h) => (h.type === "house" ? 2 : 1) },
-    { slug: "apple-homepod-mini", install: "pair", qty: (h) => (h.type !== "office" && h.rooms >= 3 ? 1 : 0) },
-  ],
-  energy: [
-    { slug: "shelly-pro-3em", install: "pro", qty: () => 1 },
-    { slug: "shelly-plug-s-gen3", install: "pair", qty: () => 2 },
-  ],
-};
+export function qtyFor(rule: QtyRule, h: Home) {
+  const n = Math.max(0, rule.n);
+  const floors = h.type === "house" ? h.floors : 1;
+  if (rule.per === "room") return n * h.rooms;
+  if (rule.per === "floor") return n * floors;
+  if (rule.per === "rooms") return n > 0 ? Math.ceil(h.rooms / n) : 0;
+  return n;
+}
 
-/** Controllers that other devices cannot work without. Added once when any device that needs them is in the list. */
-const REQUIRED: { slug: string; install: InstallClass; for: string[] }[] = [
-  {
-    slug: "aqara-hub-m3",
-    install: "pair",
-    for: ["aqara-water-leak-sensor", "aqara-motion-sensor-p2", "aqara-door-window-sensor-p2", "aqara-smart-lock-u200-kit"],
-  },
-  { slug: "philips-hue-bridge-pro", install: "pair", for: ["philips-hue-color-e27-2-pack"] },
-];
+// ---------- The starter setup (used until the owner saves their own) ----------
+
+type Q = [number, QtyPer];
+const r = ([n, per]: Q): QtyRule => ({ n, per });
+const all = (q: Q) => ({ apartment: r(q), house: r(q), office: r(q) });
+const each = (apartment: Q, house: Q, office: Q) => ({ apartment: r(apartment), house: r(house), office: r(office) });
+
+/** Built from the old per-class installation rates in the settings, so existing prices carry over. */
+export function defaultSetup(s: SiteSettings): CalcSetup {
+  const pair = s.installPairCents;
+  const wall = s.installWallCents;
+  const mount = s.installMountCents;
+  const pro = s.installProCents;
+  const item = (slug: string, installCents: number, qty: CalcItem["qty"], hub = ""): CalcItem => ({ slug, installCents, qty, hub });
+  const AQARA = "aqara-hub-m3";
+  const HUE = "philips-hue-bridge-pro";
+  const items: Record<BuiltinSystem, CalcItem[]> = {
+    lighting: [
+      item("shelly-1pm-gen4", wall, all([1, "room"])),
+      item("philips-hue-color-e27-2-pack", pair, each([1, "home"], [1, "home"], [0, "home"]), HUE),
+      item("aqara-presence-sensor-fp2", pair, all([0, "home"])),
+    ],
+    access: [item("aqara-smart-lock-u200-kit", pro, all([1, "home"]), AQARA), item("aqara-video-doorbell-g4", pro, all([1, "home"]))],
+    cameras: [
+      item("tapo-c200", mount, each([3, "rooms"], [1, "floor"], [3, "rooms"])),
+      item("tapo-c320ws", mount, each([0, "home"], [2, "home"], [1, "home"])),
+    ],
+    heating: [
+      item("netatmo-smart-thermostat", pro, each([1, "home"], [1, "floor"], [1, "home"])),
+      item("aqara-door-window-sensor-p2", pair, all([0, "home"]), AQARA),
+    ],
+    blinds: [item("shelly-2pm-gen3", wall, all([1, "room"]))],
+    sensors: [
+      item("aqara-water-leak-sensor", pair, each([2, "rooms"], [2, "floor"], [2, "rooms"]), AQARA),
+      item("aqara-motion-sensor-p2", pair, all([2, "rooms"]), AQARA),
+      item("aqara-door-window-sensor-p2", pair, each([1, "home"], [3, "home"], [2, "home"]), AQARA),
+      item("shelly-plus-smoke", pair, each([3, "rooms"], [1, "floor"], [3, "rooms"])),
+    ],
+    network: [item("tp-link-deco-be25-2-pack", pair, each([5, "rooms"], [1, "floor"], [4, "rooms"]))],
+    sound: [
+      item("sonos-era-100", pair, each([1, "home"], [2, "home"], [1, "home"])),
+      item("apple-homepod-mini", pair, each([1, "home"], [1, "home"], [0, "home"])),
+    ],
+    energy: [item("shelly-pro-3em", pro, all([1, "home"])), item("shelly-plug-s-gen3", pair, all([2, "home"]))],
+  };
+  return {
+    baseCents: s.installBaseCents,
+    spreadPercent: 25,
+    systems: BUILTIN_SYSTEMS.map((key) => ({ key, enabled: true, names: { bg: "", en: "", tr: "" }, icon: key, items: items[key] })),
+    hubs: [
+      { slug: AQARA, installCents: pair },
+      { slug: HUE, installCents: pair },
+    ],
+  };
+}
+
+const PERS: QtyPer[] = ["home", "room", "floor", "rooms"];
+const cents = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? Math.max(0, Math.round(v)) : 0);
+const text = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice(0, max) : "");
+
+/** The owner's setup, cleaned up so a half-filled or older save can never break the public page. */
+export function setupFrom(s: SiteSettings): CalcSetup {
+  const raw = s.calculator;
+  if (!raw || !Array.isArray(raw.systems)) return defaultSetup(s);
+  const rule = (v: Partial<QtyRule> | undefined): QtyRule => ({
+    n: clamp(Number(v?.n) || 0, 0, QTY_MAX),
+    per: PERS.includes(v?.per as QtyPer) ? (v?.per as QtyPer) : "home",
+  });
+  const seen = new Set<string>();
+  const systems = raw.systems
+    .filter((x) => x && /^[a-z0-9-]{1,40}$/.test(x.key) && !seen.has(x.key) && seen.add(x.key))
+    .map((x) => ({
+      key: x.key,
+      enabled: x.enabled !== false,
+      names: { bg: text(x.names?.bg, 60), en: text(x.names?.en, 60), tr: text(x.names?.tr, 60) },
+      icon: (SYSTEM_ICONS as readonly string[]).includes(x.icon) ? x.icon : "hubs",
+      items: (Array.isArray(x.items) ? x.items : [])
+        .filter((i) => i && typeof i.slug === "string" && i.slug)
+        .map((i) => ({
+          slug: i.slug,
+          installCents: cents(i.installCents),
+          hub: typeof i.hub === "string" ? i.hub : "",
+          qty: { apartment: rule(i.qty?.apartment), house: rule(i.qty?.house), office: rule(i.qty?.office) },
+        })),
+    }));
+  const hubs = (Array.isArray(raw.hubs) ? raw.hubs : []).filter((h) => h && typeof h.slug === "string" && h.slug).map((h) => ({ slug: h.slug, installCents: cents(h.installCents) }));
+  return { baseCents: cents(raw.baseCents), spreadPercent: clamp(Number(raw.spreadPercent) || 0, 0, 200), systems, hubs };
+}
+
+/** Name of a system in a language: the owner's own name, else the built-in one, else the Bulgarian one. */
+export function systemTitle(sys: CalcSystem, locale: Locale, builtin: Record<BuiltinSystem, { title: string }>) {
+  return sys.names[locale] || (isBuiltin(sys.key) && !sys.names.bg ? builtin[sys.key].title : sys.names.bg) || sys.key;
+}
+
+// ---------- Estimate ----------
 
 export type CatalogueItem = { name: string; category: string; imageUrl: string | null; priceCents: number; stock: number; available: boolean };
 
 export type Line = {
   key: string;
-  system: SystemKey | "required";
+  system: string;
   slug: string;
   item: CatalogueItem;
   qty: number;
   defaultQty: number;
-  install: InstallClass;
+  installCents: number;
 };
-
-export type InstallRates = Record<"base" | InstallClass, number>;
-
-export function ratesFrom(s: SiteSettings): InstallRates {
-  return { base: s.installBaseCents, pair: s.installPairCents, wall: s.installWallCents, mount: s.installMountCents, pro: s.installProCents };
-}
-
-const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, Math.round(n)));
 
 export function lineKey(system: string, slug: string) {
   return `${system}.${slug}`;
 }
 
-/** Device list for a configuration. Products missing from the catalogue are left out. */
-export function buildLines(cfg: CalcConfig, catalogue: Map<string, CatalogueItem>): Line[] {
+/** Device list for a configuration. Products missing from the shop are left out. */
+export function buildLines(cfg: CalcConfig, setup: CalcSetup, catalogue: Map<string, CatalogueItem>): Line[] {
   const lines: Line[] = [];
-  for (const system of SYSTEMS) {
-    if (!cfg.systems.includes(system)) continue;
-    for (const rule of RULES[system]) {
+  const hubsNeeded = new Set<string>();
+  for (const sys of setup.systems) {
+    if (!sys.enabled || !cfg.systems.includes(sys.key)) continue;
+    const seen = new Set<string>();
+    for (const rule of sys.items) {
       const item = catalogue.get(rule.slug);
-      if (!item) continue;
-      const key = lineKey(system, rule.slug);
-      const defaultQty = clamp(rule.qty(cfg), 0, QTY_MAX);
+      if (!item || seen.has(rule.slug)) continue;
+      seen.add(rule.slug);
+      const key = lineKey(sys.key, rule.slug);
+      const defaultQty = clamp(qtyFor(rule.qty[cfg.type], cfg), 0, QTY_MAX);
       const qty = key in cfg.qty ? clamp(cfg.qty[key], 0, QTY_MAX) : defaultQty;
-      lines.push({ key, system, slug: rule.slug, item, qty, defaultQty, install: rule.install });
+      lines.push({ key, system: sys.key, slug: rule.slug, item, qty, defaultQty, installCents: rule.installCents });
+      if (qty > 0 && rule.hub) hubsNeeded.add(rule.hub);
     }
   }
   const chosen = new Set(lines.filter((l) => l.qty > 0).map((l) => l.slug));
-  for (const req of REQUIRED) {
-    const item = catalogue.get(req.slug);
-    if (!item || chosen.has(req.slug) || !req.for.some((s) => chosen.has(s))) continue;
-    lines.push({ key: lineKey("required", req.slug), system: "required", slug: req.slug, item, qty: 1, defaultQty: 1, install: req.install });
-    chosen.add(req.slug);
+  for (const hub of setup.hubs) {
+    const item = catalogue.get(hub.slug);
+    if (!item || chosen.has(hub.slug) || !hubsNeeded.has(hub.slug)) continue;
+    lines.push({ key: lineKey("required", hub.slug), system: "required", slug: hub.slug, item, qty: 1, defaultQty: 1, installCents: hub.installCents });
+    chosen.add(hub.slug);
   }
   return lines;
 }
@@ -142,13 +223,13 @@ export type Estimate = {
   highCents: number;
 };
 
-export function estimate(cfg: CalcConfig, catalogue: Map<string, CatalogueItem>, rates: InstallRates): Estimate {
-  const lines = buildLines(cfg, catalogue);
+export function estimate(cfg: CalcConfig, setup: CalcSetup, catalogue: Map<string, CatalogueItem>): Estimate {
+  const lines = buildLines(cfg, setup, catalogue);
   const active = lines.filter((l) => l.qty > 0);
   const deviceCount = active.reduce((n, l) => n + l.qty, 0);
   const deviceCents = active.reduce((n, l) => n + l.qty * l.item.priceCents, 0);
-  const installLowCents = cfg.install && active.length ? rates.base + active.reduce((n, l) => n + l.qty * rates[l.install], 0) : 0;
-  const installHighCents = Math.round(installLowCents * INSTALL_SPREAD);
+  const installLowCents = cfg.install && active.length ? setup.baseCents + active.reduce((n, l) => n + l.qty * l.installCents, 0) : 0;
+  const installHighCents = Math.round(installLowCents * (1 + setup.spreadPercent / 100));
   const low = deviceCents + installLowCents;
   const high = deviceCents + installHighCents;
   return {
@@ -163,10 +244,10 @@ export function estimate(cfg: CalcConfig, catalogue: Map<string, CatalogueItem>,
 }
 
 /** Device and per-unit installation cost of one system's default kit, shown on its card. */
-export function systemCost(system: SystemKey, cfg: CalcConfig, catalogue: Map<string, CatalogueItem>, rates: InstallRates) {
-  return buildLines({ ...cfg, systems: [system] }, catalogue)
+export function systemCost(system: string, cfg: CalcConfig, setup: CalcSetup, catalogue: Map<string, CatalogueItem>) {
+  return buildLines({ ...cfg, systems: [system] }, setup, catalogue)
     .filter((l) => l.system === system)
-    .reduce((n, l) => n + l.qty * (l.item.priceCents + (cfg.install ? rates[l.install] : 0)), 0);
+    .reduce((n, l) => n + l.qty * (l.item.priceCents + (cfg.install ? l.installCents : 0)), 0);
 }
 
 // ---------- Shareable link ----------
@@ -183,6 +264,9 @@ export function serializeConfig(cfg: CalcConfig) {
   return p.toString();
 }
 
+const KEY = /^[a-z0-9-]{1,80}$/;
+
+/** Reads a shared link. Systems and products the setup does not know are simply ignored later. */
 export function parseConfig(search: string): CalcConfig {
   const p = new URLSearchParams(search);
   const type = (PROPERTY_TYPES as readonly string[]).includes(p.get("type") ?? "") ? (p.get("type") as PropertyType) : defaultConfig.type;
@@ -190,16 +274,12 @@ export function parseConfig(search: string): CalcConfig {
     const n = Number(p.get(key));
     return p.has(key) && Number.isFinite(n) ? clamp(n, min, max) : fallback;
   };
-  const systems = p.has("sys")
-    ? SYSTEMS.filter((s) => (p.get("sys") ?? "").split(".").includes(s))
-    : defaultConfig.systems;
+  const systems = p.has("sys") ? [...new Set((p.get("sys") ?? "").split(".").filter((s) => KEY.test(s)))] : defaultConfig.systems;
   const qty: Record<string, number> = {};
   for (const entry of (p.get("q") ?? "").split(",")) {
     const [system, slug, value] = entry.split(".");
     const n = Number(value);
-    if (system && slug && Number.isFinite(n) && (system in RULES) && RULES[system as SystemKey].some((r) => r.slug === slug)) {
-      qty[lineKey(system, slug)] = clamp(n, 0, QTY_MAX);
-    }
+    if (system && slug && KEY.test(system) && KEY.test(slug) && Number.isFinite(n)) qty[lineKey(system, slug)] = clamp(n, 0, QTY_MAX);
   }
   return {
     type,
@@ -212,9 +292,9 @@ export function parseConfig(search: string): CalcConfig {
 }
 
 /** Contact form "service" value that best matches the chosen systems. */
-export function serviceFor(systems: SystemKey[]) {
+export function serviceFor(systems: string[]) {
   if (systems.length !== 1) return "full";
-  const map: Partial<Record<SystemKey, string>> = {
+  const map: Record<string, string> = {
     lighting: "lighting",
     heating: "climate",
     access: "security",

@@ -15,6 +15,7 @@ const items = [
   { href: "/admin/chats/", label: "Чат", badge: "chats" },
   { href: "/admin/faq/", label: "Въпроси (FAQ)" },
   { href: "/admin/requests/", label: "GDPR и откази", badge: "requests" },
+  { href: "/admin/settings/calculator/", label: "Калкулатор" },
   { href: "/admin/settings/", label: "Настройки" },
   { href: "/admin/users/", label: "Потребители" },
 ] as const;
@@ -42,7 +43,11 @@ export function AdminNav({ user, badges }: { user: AdminProfile; badges: Record<
             })
             .map((item) => {
               const path = pathname.endsWith("/") ? pathname : `${pathname}/`;
-              const active = "exact" in item ? path === item.href : path.startsWith(item.href);
+              // The most specific match wins, so Калкулатор (under Настройки) does not light up both.
+              const active =
+                "exact" in item
+                  ? path === item.href
+                  : path.startsWith(item.href) && !items.some((o) => o.href.length > item.href.length && o.href.startsWith(item.href) && path.startsWith(o.href));
               const count = "badge" in item ? (badges[item.badge] ?? 0) : 0;
               return (
                 <li key={item.href}>
