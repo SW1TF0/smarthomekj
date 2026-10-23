@@ -1,3 +1,5 @@
+import type { CalcSetup } from "./calculator";
+
 export type SiteSettings = {
   companyName: string;
   legalName: string;
@@ -26,6 +28,8 @@ export type SiteSettings = {
   installWallCents: number;
   installMountCents: number;
   installProCents: number;
+  /** Price calculator setup from Admin → Калкулатор. Missing until the owner saves it; see setupFrom(). */
+  calculator?: CalcSetup | null;
 };
 
 // Placeholders are marked with [ ] so they are easy to spot on the live site
@@ -53,7 +57,7 @@ export const defaultSettings: SiteSettings = {
   chatBotName: "KJ Assistant",
   instagram: "",
   facebook: "",
-  // Installation rates used by the price calculator (gross, VAT included).
+  // Old per-class installation rates (gross, VAT included). They seed the calculator's starter setup.
   installBaseCents: 3900,
   installPairCents: 600,
   installWallCents: 1200,
