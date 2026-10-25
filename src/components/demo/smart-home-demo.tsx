@@ -769,6 +769,9 @@ export function SmartHomeDemo({ locale, t }: { locale: Locale; t: Labels }) {
 
   // ---------- Scene and event cards ----------
 
+  // Shortcuts are black and white for a calmer, premium look: scenes solid black, events light grey.
+  const INK = "#1d1d1f";
+  const MIST = "#ececee";
   type CardItem<T> = {
     id: T;
     x: number;
@@ -782,7 +785,7 @@ export function SmartHomeDemo({ locale, t }: { locale: Locale; t: Labels }) {
       id: "morning",
       x: 250,
       area: [20, 402],
-      bg: "#fcc53a",
+      bg: INK,
       fg: "#fff",
       icon: (p) => <SunIcon {...p} />,
     },
@@ -790,7 +793,7 @@ export function SmartHomeDemo({ locale, t }: { locale: Locale; t: Labels }) {
       id: "away",
       x: 554,
       area: [402, 700],
-      bg: "#86be66",
+      bg: INK,
       fg: "#fff",
       icon: (p) => <OfficeIcon {...p} />,
     },
@@ -798,7 +801,7 @@ export function SmartHomeDemo({ locale, t }: { locale: Locale; t: Labels }) {
       id: "evening",
       x: 846,
       area: [700, 991],
-      bg: "#8d84f9",
+      bg: INK,
       fg: "#fff",
       icon: (p) => <SunsetIcon {...p} />,
     },
@@ -806,7 +809,7 @@ export function SmartHomeDemo({ locale, t }: { locale: Locale; t: Labels }) {
       id: "movie",
       x: 1136,
       area: [991, 1282],
-      bg: "#fb6a77",
+      bg: INK,
       fg: "#fff",
       icon: (p) => <FilmIcon {...p} />,
     },
@@ -814,7 +817,7 @@ export function SmartHomeDemo({ locale, t }: { locale: Locale; t: Labels }) {
       id: "night",
       x: 1428,
       area: [1282, 1571],
-      bg: "#6b9ff4",
+      bg: INK,
       fg: "#fff",
       icon: (p) => <MoonIcon {...p} fill="currentColor" />,
     },
@@ -824,32 +827,32 @@ export function SmartHomeDemo({ locale, t }: { locale: Locale; t: Labels }) {
       id: "doorbell",
       x: 190,
       area: [20, 346],
-      bg: "#fdeeee",
-      fg: "#fb5a61",
+      bg: MIST,
+      fg: INK,
       icon: (p) => <BellIcon {...p} fill="currentColor" />,
     },
     {
       id: "leak",
       x: 503,
       area: [346, 673],
-      bg: "#edf3fd",
-      fg: "#3e96fa",
+      bg: MIST,
+      fg: INK,
       icon: (p) => <DropIcon {...p} fill="currentColor" />,
     },
     {
       id: "window",
       x: 843,
       area: [673, 1036],
-      bg: "#fdf4e6",
-      fg: "#f0b429",
+      bg: MIST,
+      fg: INK,
       icon: (p) => <WindowIcon {...p} />,
     },
     {
       id: "motion",
       x: 1230,
       area: [1036, 1457],
-      bg: "#ebf6ec",
-      fg: "#43b85a",
+      bg: MIST,
+      fg: INK,
       icon: (p) => <MotionIcon {...p} />,
     },
   ];
