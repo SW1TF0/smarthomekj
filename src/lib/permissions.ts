@@ -29,5 +29,7 @@ export function can(p: Pick<AdminProfile, "role" | "permissions">, permission: P
 
 /** Which permission an admin URL needs, or null for pages everyone on the team may open. */
 export function permissionForPath(path: string): Permission | null {
+  // Invoices belong to orders: whoever handles orders issues their invoices.
+  if (path.startsWith("/admin/invoices/")) return "orders";
   return PERMISSIONS.find((x) => path.startsWith(x.href))?.key ?? null;
 }

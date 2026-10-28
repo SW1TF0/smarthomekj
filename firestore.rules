@@ -48,6 +48,14 @@ service cloud.firestore {
       allow write: if can("settings");
     }
 
+    // Invoice numbers: the last number used. Only moves forward, one step at a time (see issueInvoice).
+    match /config/counters {
+      allow read: if can("orders");
+      allow create: if can("orders") && request.resource.data.invoice is int && request.resource.data.invoice > 0;
+      allow update: if can("orders") && request.resource.data.invoice == resource.data.invoice + 1;
+      allow delete: if false;
+    }
+
     // First run: config/setup does not exist, so the first signed-in person may make themselves the owner, once.
     match /config/setup {
       allow read: if true;
@@ -103,6 +111,18 @@ service cloud.firestore {
         && only(["number", "paymentMethod", "locale", "email", "name", "phone", "address", "city", "postcode", "country",
                  "companyName", "vatNumber", "note", "items", "subtotalCents", "shippingCents", "totalCents", "vatCents",
                  "status", "paymentStatus", "createdAt", "termsAcceptedAt"]);
+    }
+
+    // Invoices and credit notes. Issued documents are never changed or deleted (ЗДДС); only the "sent" time is noted.
+    match /invoices/{number} {
+      allow read: if can("orders");
+      allow create: if can("orders")
+        && number.matches("^[0-9]{10}$")
+        && request.resource.data.number == number
+        && request.resource.data.type in ["INVOICE", "CREDIT_NOTE"]
+        && getAfter(/databases/$(database)/documents/config/counters).data.invoice == request.resource.data.seq;
+      allow update: if can("orders") && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["sentAt"]);
+      allow delete: if false;
     }
 
     match /inquiries/{id} {

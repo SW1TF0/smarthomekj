@@ -2,6 +2,8 @@
 
 import { useState, useTransition } from "react";
 import type { Locale } from "@/i18n/config";
+import { orderConfirmationEmail, ownerNoticeEmail } from "@/lib/documents";
+import { emailConfigured, sendEmail } from "@/lib/email";
 import { formatMoney, vatFromGross } from "@/lib/money";
 import { shippingFor } from "@/lib/shipping";
 import { createOrder, loadProducts, newOrderNumber, useSettings, type OrderInput } from "@/lib/store";
@@ -118,6 +120,13 @@ export function CheckoutForm({ locale, labels }: { locale: Locale; labels: Label
           vatCents: vatFromGross(subtotal + ship),
         };
         await createOrder(order);
+        if (emailConfigured(s)) {
+          // The order is saved already; a failed email must not stop the customer, so errors are ignored.
+          const sends: Promise<unknown>[] = [];
+          if (s.emailOrderConfirm) sends.push(sendEmail(s, order.email, orderConfirmationEmail(order, s, new Date())).catch(() => {}));
+          if (s.emailNotifyOwner && (s.notifyEmail || s.email)) sends.push(sendEmail(s, s.notifyEmail || s.email, ownerNoticeEmail(order, s)).catch(() => {}));
+          await Promise.race([Promise.all(sends), new Promise((r) => setTimeout(r, 4000))]);
+        }
         sessionStorage.setItem(LAST_ORDER_KEY, JSON.stringify({ ...order, placedAt: new Date().toISOString() }));
         clear();
         window.location.assign(`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/${locale}/checkout/success/`);

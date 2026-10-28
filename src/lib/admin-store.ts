@@ -20,6 +20,8 @@ import {
   limit,
   orderBy,
   query,
+  arrayUnion,
+  runTransaction,
   serverTimestamp,
   setDoc,
   updateDoc,
@@ -35,6 +37,7 @@ import { defaultSettings, type SiteSettings } from "./settings";
 import type { CalcSetup } from "./calculator";
 import type { Permission } from "./permissions";
 import type { OrderDoc } from "./store";
+import { invoiceNumber, type InvoiceDoc } from "./invoice";
 
 export type AdminRole = "ADMIN" | "EDITOR";
 export type AdminProfile = { uid: string; email: string; name: string; role: AdminRole; permissions?: Permission[]; lastLoginAt?: Timestamp | null };
@@ -175,6 +178,57 @@ export async function saveOrder(order: OrderDoc, changes: { status: string; paym
   }
   batch.update(doc(db(), "orders", order.id), { ...changes, stockApplied, updatedAt: serverTimestamp() });
   await batch.commit();
+}
+
+export type EmailLogEntry = { kind: string; to: string; at: string; ok: boolean; error?: string };
+
+/** Notes on the order which emails went out, so the team can see it on the order page. */
+export const logOrderEmail = (orderId: string, entry: EmailLogEntry) =>
+  updateDoc(doc(db(), "orders", orderId), { emails: arrayUnion(entry) });
+
+// ---------- Invoices ----------
+
+export type InvoiceRow = InvoiceDoc & { id: string };
+
+/**
+ * Takes the next number from config/counters and writes the document in one transaction,
+ * so two people issuing at once can never get the same number or leave a gap.
+ */
+export async function issueInvoice(data: Omit<InvoiceDoc, "number" | "seq">, startNumber: number): Promise<InvoiceRow> {
+  const counterRef = doc(db(), "config", "counters");
+  return runTransaction(db(), async (tx) => {
+    const counter = await tx.get(counterRef);
+    const last = counter.exists() ? Number(counter.data().invoice ?? 0) : 0;
+    const seq = Math.max(last + 1, Math.floor(startNumber) || 1);
+    const number = invoiceNumber(seq);
+    const ref = doc(db(), "invoices", number);
+    const row = { ...data, number, seq };
+    tx.set(counterRef, { invoice: seq }, { merge: true });
+    tx.set(ref, { ...row, createdAt: serverTimestamp() });
+    return { ...row, id: number };
+  });
+}
+
+export async function listInvoices() {
+  const snap = await getDocs(query(collection(db(), "invoices"), orderBy("seq", "desc"), limit(1000)));
+  return snap.docs.map((d) => ({ ...(d.data() as InvoiceDoc), id: d.id }));
+}
+
+export async function invoicesForOrder(orderId: string) {
+  const snap = await getDocs(query(collection(db(), "invoices"), where("orderId", "==", orderId)));
+  return snap.docs.map((d) => ({ ...(d.data() as InvoiceDoc), id: d.id })).sort((a, b) => a.seq - b.seq);
+}
+
+export async function getInvoice(id: string) {
+  const snap = await getDoc(doc(db(), "invoices", id));
+  return snap.exists() ? ({ ...(snap.data() as InvoiceDoc), id: snap.id } as InvoiceRow) : null;
+}
+
+export const markInvoiceSent = (id: string) => updateDoc(doc(db(), "invoices", id), { sentAt: new Date().toISOString() });
+
+export async function lastInvoiceNumber() {
+  const snap = await getDoc(doc(db(), "config", "counters"));
+  return snap.exists() ? Number(snap.data().invoice ?? 0) : 0;
 }
 
 // ---------- Products ----------

@@ -28,6 +28,20 @@ export type SiteSettings = {
   installWallCents: number;
   installMountCents: number;
   installProCents: number;
+  /** Automatic emails through EmailJS (emailjs.com, free plan). All three must be filled in for emails to go out. */
+  emailServiceId: string;
+  emailTemplateId: string;
+  emailPublicKey: string;
+  emailOrderConfirm: boolean;
+  emailStatusUpdates: boolean;
+  emailNotifyOwner: boolean;
+  /** Where "new order" notices go; empty means the customer email above. */
+  notifyEmail: string;
+  /** Invoices. When the company is not VAT registered, invoices carry no VAT and cite art. 113(9) ZDDS. */
+  vatRegistered: boolean;
+  invoiceStartNumber: number;
+  invoicePlace: string;
+  invoiceCompiler: string;
   /** Price calculator setup from Admin → Калкулатор. Missing until the owner saves it; see setupFrom(). */
   calculator?: CalcSetup | null;
 };
@@ -57,6 +71,17 @@ export const defaultSettings: SiteSettings = {
   chatBotName: "KJ Assistant",
   instagram: "",
   facebook: "",
+  emailServiceId: "",
+  emailTemplateId: "",
+  emailPublicKey: "",
+  emailOrderConfirm: true,
+  emailStatusUpdates: true,
+  emailNotifyOwner: true,
+  notifyEmail: "",
+  vatRegistered: true,
+  invoiceStartNumber: 1,
+  invoicePlace: "",
+  invoiceCompiler: "",
   // Old per-class installation rates (gross, VAT included). They seed the calculator's starter setup.
   installBaseCents: 3900,
   installPairCents: 600,
