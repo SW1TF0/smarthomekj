@@ -178,6 +178,7 @@ export type OrderDoc = OrderInput & {
   paymentStatus: string;
   adminNotes?: string;
   trackingNumber?: string;
+  emails?: { kind: string; to: string; at: string; ok: boolean; error?: string }[];
   stockApplied?: boolean;
   createdAt: Timestamp | null;
   termsAcceptedAt: Timestamp | null;

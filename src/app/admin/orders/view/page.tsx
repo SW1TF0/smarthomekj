@@ -3,8 +3,22 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { AdminForm, str } from "@/components/admin/admin-form";
+import { OrderDocuments } from "@/components/admin/order-documents";
 import { Badge, Card, Empty, Loading, PageHeader, inputCls, labelCls, statusLabel } from "@/components/admin/ui";
-import { ORDER_STATUSES, findWithdrawalsForOrder, getOrder, listAllProducts, saveOrder, toDate, useAdminData } from "@/lib/admin-store";
+import {
+  ORDER_STATUSES,
+  findWithdrawalsForOrder,
+  getAdminSettings,
+  getOrder,
+  invoicesForOrder,
+  listAllProducts,
+  logOrderEmail,
+  saveOrder,
+  toDate,
+  useAdminData,
+} from "@/lib/admin-store";
+import { statusEmail } from "@/lib/documents";
+import { emailConfigured, sendEmail } from "@/lib/email";
 import { formatDate, formatMoney } from "@/lib/money";
 
 const mailText: Record<string, string> = {
@@ -20,15 +34,21 @@ export default function OrderPage() {
   const { data, error, reload } = useAdminData(
     async () => {
       const order = await getOrder(id);
-      if (!order) return { order: null, withdrawals: 0, products: [] };
-      const [withdrawals, products] = await Promise.all([findWithdrawalsForOrder(order.number), listAllProducts()]);
-      return { order, withdrawals, products };
+      if (!order) return { order: null, withdrawals: 0, products: [], settings: null, invoices: [] };
+      const [withdrawals, products, settings, invoices] = await Promise.all([
+        findWithdrawalsForOrder(order.number),
+        listAllProducts(),
+        getAdminSettings(),
+        invoicesForOrder(order.id),
+      ]);
+      return { order, withdrawals, products, settings, invoices };
     },
     [id],
   );
   if (!data) return <Loading error={error} />;
-  const { order, withdrawals, products } = data;
-  if (!order) return <Empty text="Поръчката не е намерена." />;
+  const { order, withdrawals, products, settings, invoices } = data;
+  if (!order || !settings) return <Empty text="Поръчката не е намерена." />;
+  const mailOn = emailConfigured(settings);
 
   // Prices are written by the visitor's browser; compare with the catalogue so tampering is visible.
   const priceOf = Object.fromEntries(products.map((p) => [p.slug, p.priceCents]));
@@ -101,6 +121,7 @@ export default function OrderPage() {
               </div>
             </dl>
           </Card>
+          <OrderDocuments order={order} settings={settings} invoices={invoices} reload={reload} />
           <Card>
             <h2 className="mb-4 font-semibold">Клиент и доставка</h2>
             <dl className="grid gap-3 text-[14px] sm:grid-cols-2">
@@ -158,13 +179,25 @@ export default function OrderPage() {
             <Badge value={order.status} />
           </div>
           <AdminForm
+            successText=""
             onSubmit={async (f) => {
-              await saveOrder(order, {
+              const changes = {
                 status: str(f, "status"),
                 paymentStatus: str(f, "paymentStatus"),
                 trackingNumber: str(f, "trackingNumber"),
                 adminNotes: str(f, "adminNotes"),
-              });
+              };
+              await saveOrder(order, changes);
+              const message = f.get("notify") === "on" && changes.status !== order.status ? statusEmail({ ...order, ...changes }, changes.status, settings) : null;
+              if (message) {
+                try {
+                  await sendEmail(settings, order.email, message);
+                  await logOrderEmail(order.id, { kind: "status", to: order.email, at: new Date().toISOString(), ok: true });
+                } catch (e) {
+                  reload();
+                  return `Запазено, но имейлът не беше изпратен. ${e instanceof Error ? e.message : ""}`;
+                }
+              }
               reload();
             }}
           >
@@ -196,12 +229,18 @@ export default function OrderPage() {
               <label className={labelCls}>Вътрешни бележки</label>
               <textarea name="adminNotes" rows={4} defaultValue={order.adminNotes ?? ""} className={inputCls} />
             </div>
+            {mailOn && (
+              <label className="flex items-center gap-2 text-[14px]">
+                <input type="checkbox" name="notify" defaultChecked={settings.emailStatusUpdates} /> Изпрати имейл на клиента, ако статусът се промени
+              </label>
+            )}
           </AdminForm>
           <a href={mailto(order.status)} className="btn btn-sm mt-4 w-full bg-cloud">
             Пиши на клиента
           </a>
           <p className="mt-4 text-[12px] text-mute">
-            „Потвърдена“ намалява наличността, „Отказана“ или „Възстановена“ я връща. „Пиши на клиента“ отваря готов имейл със статуса.
+            „Потвърдена“ намалява наличността, „Отказана“ или „Възстановена“ я връща.{" "}
+            {mailOn ? "При нов статус клиентът получава имейл автоматично." : "„Пиши на клиента“ отваря готов имейл със статуса."}
           </p>
         </Card>
       </div>

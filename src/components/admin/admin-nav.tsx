@@ -10,6 +10,7 @@ import { LogoMark, MenuIcon } from "../icons";
 const items = [
   { href: "/admin/", label: "Табло", exact: true },
   { href: "/admin/orders/", label: "Поръчки", badge: "orders" },
+  { href: "/admin/invoices/", label: "Фактури" },
   { href: "/admin/products/", label: "Продукти" },
   { href: "/admin/inquiries/", label: "Запитвания", badge: "inquiries" },
   { href: "/admin/chats/", label: "Чат", badge: "chats" },
