@@ -48,7 +48,7 @@ export default async function BlackFridayPage({ params }: LocaleParams) {
             {blackFriday.categories.map((key, i) => (
               <Reveal as="li" key={key} delay={(i % 3) * 80}>
                 <Link
-                  href={`/${locale}/shop/?category=${key}`}
+                  href={`/${locale}/shop/c/${key}/`}
                   className="tile tile-hover flex h-full flex-col justify-between bg-cloud p-5 max-sm:rounded-[20px] sm:min-h-[220px] sm:p-8"
                 >
                   <CategoryIcon category={key} size={30} className="text-ink" />

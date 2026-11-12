@@ -4,6 +4,11 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  # Every night at 00:05 Sofia time (22:05 UTC in winter): products added in the admin get their own
+  # pre-rendered, indexable pages and sitemap entries, and the prices in the pages' JSON-LD follow
+  # Black Friday and other changes (src/lib/catalogue.ts reads the live catalogue at build time).
+  schedule:
+    - cron: "5 22 * * *"
 
 permissions:
   contents: read

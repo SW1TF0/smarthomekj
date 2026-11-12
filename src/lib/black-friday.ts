@@ -8,7 +8,7 @@ export const blackFriday = {
   end: "2026-11-30T23:59:59+02:00",
   percent: 10,
   /** Shop categories shown as tiles on the Black Friday page (keys of dict.shop.categories). */
-  categories: ["lighting", "climate", "security", "energy", "entertainment", "hubs"],
+  categories: ["lighting", "climate", "security", "energy", "cleaning", "hubs"],
 };
 
 export type PromoPhase = "before" | "live" | "ended";

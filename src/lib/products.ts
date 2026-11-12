@@ -84,8 +84,8 @@ export const starterFaqs: FaqDoc[] = seedFaqs.map((f, i) => ({
   },
 }));
 
-const starterSlugs = new Set(starterProducts.map((p) => p.slug));
-
+/** Every active product has its own page from the build-time catalogue (lib/catalogue.ts). One added in the
+ *  admin after the last build is not there yet: the 404 page sends /shop/<slug>/ on to /shop/product/?p=<slug>. */
 export function productHref(locale: Locale, slug: string) {
-  return starterSlugs.has(slug) ? `/${locale}/shop/${slug}/` : `/${locale}/shop/product/?p=${encodeURIComponent(slug)}`;
+  return `/${locale}/shop/${slug}/`;
 }
