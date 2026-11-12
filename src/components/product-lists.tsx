@@ -6,7 +6,7 @@ import { Suspense } from "react";
 import type { Dictionary } from "@/i18n";
 import type { Locale } from "@/i18n/config";
 import { formatMoney } from "@/lib/money";
-import { CATEGORIES } from "@/lib/products";
+import { CATEGORIES, type ProductDoc } from "@/lib/products";
 import { useProducts, useSettings } from "@/lib/store";
 import { ProductCard } from "./product-card";
 import { Reveal } from "./reveal";
@@ -51,10 +51,18 @@ export function ShopDelivery({ locale, dict }: Props) {
   );
 }
 
-function ShopCatalogue({ locale, dict }: Props) {
-  const category = useSearchParams().get("category");
+type CatalogueProps = Props & { category?: string; pageCategories?: string[]; initial?: ProductDoc[] };
+
+/** The shop grid. On a category page the category is fixed; on /shop/ it comes from ?category= (old links).
+ *  The pills open the category pages where they exist. */
+function CategoryFromQuery(props: CatalogueProps) {
+  return <ShopCatalogue {...props} category={useSearchParams().get("category") ?? undefined} />;
+}
+
+function ShopCatalogue({ locale, dict, category, pageCategories = [], initial }: CatalogueProps) {
   const active = CATEGORIES.find((c) => c === category);
-  const { products, loading } = useProducts(locale, { category: active });
+  const catHref = (c: string) => (pageCategories.includes(c) ? `/${locale}/shop/c/${c}/` : `/${locale}/shop/?category=${c}`);
+  const { products, loading } = useProducts(locale, { category: active }, initial);
 
   const pill = (href: string, label: string, on: boolean) => (
     <Link
@@ -71,7 +79,7 @@ function ShopCatalogue({ locale, dict }: Props) {
     <>
       <nav className="no-scrollbar -mx-[22px] mt-10 flex gap-2 overflow-x-auto px-[22px]" aria-label={dict.shop.title}>
         {pill(`/${locale}/shop/`, dict.shop.all, !active)}
-        {CATEGORIES.map((c) => pill(`/${locale}/shop/?category=${c}`, dict.shop.categories[c], active === c))}
+        {CATEGORIES.map((c) => pill(catHref(c), dict.shop.categories[c], active === c))}
       </nav>
       {products.length === 0 && !loading ? (
         <p className="py-24 text-center text-mute">{dict.shop.empty}</p>
@@ -86,10 +94,13 @@ function ShopCatalogue({ locale, dict }: Props) {
   );
 }
 
-export function ShopGrid(props: Props) {
+/** On a category page the grid is fully pre-rendered; on /shop/ the pre-rendered HTML shows every product
+ *  (the Suspense fallback) and the browser then applies ?category= from old links. */
+export function ShopGrid(props: CatalogueProps) {
+  if (props.category) return <ShopCatalogue {...props} />;
   return (
-    <Suspense>
-      <ShopCatalogue {...props} />
+    <Suspense fallback={<ShopCatalogue {...props} />}>
+      <CategoryFromQuery {...props} />
     </Suspense>
   );
 }

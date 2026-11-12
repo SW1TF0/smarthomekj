@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { ShopDelivery, ShopGrid } from "@/components/product-lists";
 import { resolveLocale, type LocaleParams } from "@/i18n/page";
+import { buildCatalogue } from "@/lib/catalogue";
 import { pageMetadata } from "@/lib/seo";
+import { categoriesWithPages } from "@/lib/product-seo";
 
 export async function generateMetadata({ params }: LocaleParams): Promise<Metadata> {
   const { locale, dict } = await resolveLocale(params);
@@ -21,7 +23,7 @@ export default async function ShopPage({ params }: LocaleParams) {
           </div>
           <ShopDelivery locale={locale} dict={dict} />
         </div>
-        <ShopGrid locale={locale} dict={dict} />
+        <ShopGrid locale={locale} dict={dict} pageCategories={await categoriesWithPages()} initial={await buildCatalogue()} />
       </div>
     </section>
   );

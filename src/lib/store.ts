@@ -47,13 +47,13 @@ async function loadCatalogue(): Promise<ProductDoc[]> {
   }
 }
 
-/** Products for a locale. Starts with the starter catalogue (pre-rendered) and swaps in live data. */
-export function useProducts(locale: Locale, filter: { category?: string; featured?: boolean } = {}) {
+/** Products for a locale. Starts with `initial` (the build-time catalogue on pages that pass it, else the starter one) and swaps in live data. */
+export function useProducts(locale: Locale, filter: { category?: string; featured?: boolean } = {}, initial: ProductDoc[] = starterProducts) {
   const pick = (rows: ProductDoc[]) =>
     rows
       .filter((p) => (!filter.category || p.category === filter.category) && (!filter.featured || p.featured))
       .map((p) => localizeProduct(p, locale));
-  const [products, setProducts] = useState<ProductView[]>(() => pick(starterProducts));
+  const [products, setProducts] = useState<ProductView[]>(() => pick(initial));
   const [loading, setLoading] = useState(true);
   useEffect(() => {
     let alive = true;

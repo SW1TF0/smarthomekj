@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import type { Locale } from "@/i18n/config";
 import type { Dictionary } from "@/i18n";
 import { formatMoney } from "@/lib/money";
-import { localizeProduct, starterProducts } from "@/lib/products";
+import { localizeProduct, starterProducts, type ProductDoc } from "@/lib/products";
 import { useProduct, useProducts, useSettings } from "@/lib/store";
 import { AddToCartButton } from "./add-to-cart";
 import { CheckIcon } from "./icons";
@@ -13,13 +13,14 @@ import { ProductCard } from "./product-card";
 import { ProductVisual } from "./product-visual";
 
 /** Product page body. Pre-rendered from the starter catalogue when possible, then refreshed with live price and stock. */
-export function ProductDetail({ slug: fixedSlug, locale, dict }: { slug?: string; locale: Locale; dict: Dictionary }) {
+export function ProductDetail({ slug: fixedSlug, initial, locale, dict }: { slug?: string; initial?: ProductDoc; locale: Locale; dict: Dictionary }) {
   const [slug, setSlug] = useState<string | null>(fixedSlug ?? null);
   useEffect(() => {
     if (!fixedSlug) setSlug(new URLSearchParams(window.location.search).get("p"));
   }, [fixedSlug]);
 
-  const starter = starterProducts.find((p) => p.slug === slug);
+  // The page pre-renders from the catalogue at build time (`initial`), then shows the live price and stock.
+  const starter = initial ?? starterProducts.find((p) => p.slug === slug);
   const live = useProduct(slug, locale);
   const product = live.product ?? (live.loading && starter ? localizeProduct(starter, locale) : null);
   const settings = useSettings();
@@ -39,6 +40,8 @@ export function ProductDetail({ slug: fixedSlug, locale, dict }: { slug?: string
       </section>
     );
   }
+  // Category pages exist for the categories with an SEO title (dict.meta.pages.categories).
+  const categoryHref = (c: string) => (c in dict.meta.pages.categories ? `/${locale}/shop/c/${c}/` : `/${locale}/shop/?category=${c}`);
   const related = sameCategory.filter((p) => p.id !== product.id).slice(0, 3);
 
   const stockText =
@@ -48,19 +51,6 @@ export function ProductDetail({ slug: fixedSlug, locale, dict }: { slug?: string
         ? dict.common.lowStock.replace("{n}", String(product.stock))
         : dict.common.inStock;
 
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    name: product.name,
-    description: product.tagline,
-    sku: product.sku,
-    offers: {
-      "@type": "Offer",
-      priceCurrency: "EUR",
-      price: (product.priceCents / 100).toFixed(2),
-      availability: product.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
-    },
-  };
 
   return (
     <>
@@ -71,7 +61,7 @@ export function ProductDetail({ slug: fixedSlug, locale, dict }: { slug?: string
               {dict.shop.title}
             </Link>{" "}
             /{" "}
-            <Link href={`/${locale}/shop/?category=${product.category}`} className="hover:text-ink">
+            <Link href={categoryHref(product.category)} className="hover:text-ink">
               {dict.shop.categories[product.category]}
             </Link>
           </nav>
@@ -155,7 +145,6 @@ export function ProductDetail({ slug: fixedSlug, locale, dict }: { slug?: string
           </div>
         </section>
       )}
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
     </>
   );
 }
