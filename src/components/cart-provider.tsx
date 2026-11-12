@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { loadProducts } from "@/lib/store";
 
 export type CartItem = {
   productId: string;
@@ -36,6 +37,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       if (raw) setItems(JSON.parse(raw));
     } catch {}
     setReady(true);
+    // A bag kept from an earlier visit shows today's prices (e.g. before/after Black Friday), as the order will.
+    loadProducts().then((catalogue) => {
+      const price = new Map(catalogue.map((p) => [p.slug, p.priceCents]));
+      setItems((current) => current.map((i) => (price.has(i.slug) && price.get(i.slug) !== i.priceCents ? { ...i, priceCents: price.get(i.slug)! } : i)));
+    });
   }, []);
 
   useEffect(() => {
