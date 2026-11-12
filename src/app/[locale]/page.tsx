@@ -5,6 +5,7 @@ import { FeaturedProducts } from "@/components/product-lists";
 import { CategoryWidget } from "@/components/category-widget";
 import { CategoryIcon, CheckIcon } from "@/components/icons";
 import { Reveal } from "@/components/reveal";
+import { BlackFridayBanner } from "@/components/black-friday-banner";
 import type { Metadata } from "next";
 import { htmlLang, isLocale, locales } from "@/i18n/config";
 import { getDictionary } from "@/i18n";
@@ -60,6 +61,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
+      <BlackFridayBanner href={`/${locale}/black-friday`} title={dict.blackFriday.banner} link={dict.blackFriday.bannerLink} labels={dict.blackFriday} />
       {/* Hero */}
       <section className="relative overflow-hidden pt-16 pb-12 text-center md:pt-24">
         <div className="container-apple relative">

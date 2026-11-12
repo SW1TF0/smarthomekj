@@ -13,6 +13,7 @@ const pages: { path: string; priority: number; changeFrequency: "weekly" | "mont
   { path: "demo", priority: 0.8, changeFrequency: "monthly" },
   { path: "shop", priority: 0.9, changeFrequency: "weekly" },
   ...starterProducts.map((p) => ({ path: `shop/${p.slug}`, priority: 0.7, changeFrequency: "weekly" as const })),
+  { path: "black-friday", priority: 0.8, changeFrequency: "weekly" },
   { path: "faq", priority: 0.6, changeFrequency: "monthly" },
   { path: "about", priority: 0.5, changeFrequency: "yearly" },
   { path: "contact", priority: 0.7, changeFrequency: "yearly" },

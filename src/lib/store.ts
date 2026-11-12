@@ -20,12 +20,18 @@ import type { Locale } from "@/i18n/config";
 import { firestore } from "./firebase";
 import { localizeProduct, starterFaqs, starterProducts, type FaqDoc, type ProductDoc, type ProductView } from "./products";
 import { defaultSettings, type SiteSettings } from "./settings";
+import { withPromo } from "./black-friday";
 
 // ---------- Catalogue ----------
 
 let productCache: ProductDoc[] | null = null;
 
+/** The live catalogue with the Black Friday discount applied while it runs (lib/black-friday.ts). */
 export async function loadProducts(): Promise<ProductDoc[]> {
+  return withPromo(await loadCatalogue());
+}
+
+async function loadCatalogue(): Promise<ProductDoc[]> {
   const db = firestore();
   if (!db) return starterProducts;
   if (productCache) return productCache;

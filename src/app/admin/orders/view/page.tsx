@@ -20,6 +20,7 @@ import {
 import { statusEmail } from "@/lib/documents";
 import { emailConfigured, sendEmail } from "@/lib/email";
 import { formatDate, formatMoney } from "@/lib/money";
+import { promoPrice } from "@/lib/black-friday";
 
 const mailText: Record<string, string> = {
   PROCESSING: "Потвърждаваме поръчката Ви. Ще Ви уведомим, когато я изпратим.",
@@ -52,7 +53,8 @@ export default function OrderPage() {
 
   // Prices are written by the visitor's browser; compare with the catalogue so tampering is visible.
   const priceOf = Object.fromEntries(products.map((p) => [p.slug, p.priceCents]));
-  const mismatched = order.items.filter((i) => priceOf[i.slug] !== undefined && priceOf[i.slug] !== i.priceCents);
+  // Black Friday orders are paid at the discounted price (lib/black-friday.ts), which is also correct.
+  const mismatched = order.items.filter((i) => priceOf[i.slug] !== undefined && priceOf[i.slug] !== i.priceCents && promoPrice(priceOf[i.slug]) !== i.priceCents);
   const itemsTotal = order.items.reduce((s, i) => s + i.priceCents * i.quantity, 0);
   const sumWrong = itemsTotal !== order.subtotalCents || order.subtotalCents + order.shippingCents !== order.totalCents;
 
