@@ -117,7 +117,7 @@ export function SiteHeader({ locale, labels }: { locale: Locale; labels: Labels 
             <Link href={`/${locale}/cart`} className="relative rounded-full p-2 text-ink/75 hover:text-ink" aria-label={`${labels.cart} (${count})`}>
               <BagIcon size={18} />
               {ready && count > 0 && (
-                <span className="absolute -right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-ink px-1 text-[10px] font-semibold text-white">
+                <span key={count} className="badge-pop absolute -right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-ink px-1 text-[10px] font-semibold text-white">
                   {count}
                 </span>
               )}
@@ -142,7 +142,7 @@ export function SiteHeader({ locale, labels }: { locale: Locale; labels: Labels 
       </div>
 
       {open && (
-        <div id="mobile-menu" className="md:hidden fixed inset-x-0 top-12 bottom-0 bg-white/95 backdrop-blur-xl">
+        <div id="mobile-menu" className="menu-in md:hidden fixed inset-x-0 top-12 bottom-0 bg-white/95 backdrop-blur-xl">
           <ul className="container-wide pt-6 space-y-1">
             {mobileLinks.map((l, i) => (
               <li key={l.href} style={{ animation: `fadeUp .5s ${i * 40}ms both` }}>

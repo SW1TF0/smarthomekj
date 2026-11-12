@@ -5,6 +5,7 @@ import { FeaturedProducts } from "@/components/product-lists";
 import { CategoryWidget } from "@/components/category-widget";
 import { CategoryIcon, CheckIcon } from "@/components/icons";
 import { Reveal } from "@/components/reveal";
+import { CountUp } from "@/components/count-up";
 import { BlackFridayBanner } from "@/components/black-friday-banner";
 import type { Metadata } from "next";
 import { htmlLang, isLocale, locales } from "@/i18n/config";
@@ -189,7 +190,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
               <Reveal key={s.label} delay={i * 80} className="text-center">
                 <dt className="sr-only">{s.label}</dt>
                 <dd>
-                  <span className="block text-[44px] font-bold leading-none tracking-tight md:text-[72px]">{s.value}</span>
+                  <span className="block text-[44px] font-bold leading-none tracking-tight md:text-[72px]"><CountUp value={s.value} /></span>
                   <span className="mt-2 block text-[15px] text-mute">{s.label}</span>
                 </dd>
               </Reveal>
