@@ -1,23 +1,14 @@
-// Black Friday 2026: dates and the discount per shop category.
-// Every `null` is shown on the site as a clearly marked yellow placeholder ([ОТСТЪПКА] / [DISCOUNT]),
-// so nothing goes live with made-up numbers. Fill them in (e.g. "-20%") before publishing.
+// Black Friday 2026 (owner's decision, 12.11.2026): −10% on every price in the shop,
+// from Friday 13.11.2026 00:00 to Sunday 30.11.2026 23:59 (Sofia time).
+// The discount is applied in the browser when the catalogue loads (lib/store.ts loadProducts),
+// so it starts and ends on time without a new build; the bag and the order use the same prices.
 
-/** The countdown runs to `start`; between `start` and `end` the offers are on; after `end` the banner hides itself. */
 export const blackFriday = {
-  start: "2026-11-27T00:00:00+02:00",
-  // TODO(owner): when does the promotion end? Until then: the end of Friday 27.11.
-  end: "2026-11-27T23:59:59+02:00",
-  /** Shop categories (keys of dict.shop.categories) and their discount, e.g. "-15%". null = not given yet. */
-  offers: [
-    { category: "lighting", discount: null },
-    { category: "climate", discount: null },
-    { category: "security", discount: null },
-    { category: "energy", discount: null },
-    { category: "entertainment", discount: null },
-    { category: "hubs", discount: null },
-  ] as { category: string; discount: string | null }[],
-  /** Extra conditions (one line). null = placeholder. */
-  terms: null as string | null,
+  start: "2026-11-13T00:00:00+02:00",
+  end: "2026-11-30T23:59:59+02:00",
+  percent: 10,
+  /** Shop categories shown as tiles on the Black Friday page (keys of dict.shop.categories). */
+  categories: ["lighting", "climate", "security", "energy", "entertainment", "hubs"],
 };
 
 export type PromoPhase = "before" | "live" | "ended";
@@ -26,4 +17,16 @@ export function promoPhase(now: number = Date.now()): PromoPhase {
   if (now < Date.parse(blackFriday.start)) return "before";
   if (now <= Date.parse(blackFriday.end)) return "live";
   return "ended";
+}
+
+/** The Black Friday price of a gross price in cents: −percent, rounded DOWN to whole 10 cents
+ *  (the shop's prices end in 0), so the discount is never less than the advertised percent. */
+export function promoPrice(cents: number) {
+  return Math.floor((cents * (100 - blackFriday.percent)) / 100 / 10) * 10;
+}
+
+/** Products with the discount applied while the promotion runs: the old price becomes the struck-through one. */
+export function withPromo<T extends { priceCents: number; compareAtCents: number | null }>(rows: T[], now: number = Date.now()): T[] {
+  if (promoPhase(now) !== "live") return rows;
+  return rows.map((p) => ({ ...p, compareAtCents: Math.max(p.priceCents, p.compareAtCents ?? 0), priceCents: promoPrice(p.priceCents) }));
 }

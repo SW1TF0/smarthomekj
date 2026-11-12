@@ -26,6 +26,20 @@ export function FeaturedProducts({ locale, dict }: Props) {
   );
 }
 
+/** Every product, for the Black Friday page: the cards show the struck-through old price while the discount runs. */
+export function AllProducts({ locale, dict }: Props) {
+  const { products } = useProducts(locale);
+  return (
+    <div className="mt-10 grid grid-cols-2 gap-3 md:mt-14 md:grid-cols-3 md:gap-4">
+      {products.map((p, i) => (
+        <Reveal key={p.id} delay={(i % 3) * 80}>
+          <ProductCard product={p} locale={locale} dict={dict} />
+        </Reveal>
+      ))}
+    </div>
+  );
+}
+
 export function ShopDelivery({ locale, dict }: Props) {
   const settings = useSettings();
   return (
