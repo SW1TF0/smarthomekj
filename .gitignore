@@ -8,3 +8,7 @@ next-env.d.ts
 .DS_Store
 
 *-debug.log
+
+# Made before each build by scripts/product-images.mjs
+public/img/products/
+src/data/product-images.json

@@ -1,10 +1,12 @@
-// Product photos are uploaded to smartmenukj.com as PNG (https://smartmenukj.com/<name>.png, 100–200 KB each).
-// The same site has WebP copies (img/shop/<name>.webp, ~13 KB) served from www, without the 301 from the bare
-// domain. Other image URLs are used as they are.
-const PNG_ON_SMARTMENU = /^https?:\/\/(?:www\.)?smartmenukj\.com\/([a-z0-9_-]+)\.png$/i;
+import generated from "@/data/product-images.json";
 
-/** The fast version of a product image URL (WebP on www.smartmenukj.com), or the URL itself. */
+// WebP copies of the product photos, made at build time by scripts/product-images.mjs and served from this site
+// (public/img/products/). A photo without a copy (e.g. added in the admin after the last build) is used as it is.
+const copies: Record<string, string> = generated;
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
+
+/** The fast version of a product image URL (this site's WebP copy), or the URL itself. */
 export function fastImage(url: string): string {
-  const m = url.match(PNG_ON_SMARTMENU);
-  return m ? `https://www.smartmenukj.com/img/shop/${m[1]}.webp` : url;
+  const copy = copies[url];
+  return copy ? `${basePath}${copy}` : url;
 }
