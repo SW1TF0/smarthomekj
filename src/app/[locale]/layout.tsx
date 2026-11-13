@@ -49,6 +49,10 @@ export default async function LocaleLayout({ children, params }: { children: Rea
 
   return (
     <html lang={htmlLang[locale]} className={inter.variable}>
+      <head>
+        {/* Product photos come from www.smartmenukj.com (src/lib/images.ts): open the connection early. */}
+        <link rel="preconnect" href="https://www.smartmenukj.com" />
+      </head>
       <body>
         <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-full focus:bg-white focus:px-4 focus:py-2 focus:shadow-lg">
           Skip to content
